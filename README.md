@@ -28,7 +28,7 @@ npm run dev
 | `GOOGLE_CLIENT_ID` | ID de cliente OAuth de Google |
 | `VITE_GOOGLE_CLIENT_ID` | El mismo ID (se usa al compilar el frontend) |
 
-3. Despliega y añade el dominio de producción a **Orígenes autorizados de JavaScript** en Google Cloud. Las URLs de preview cambian en cada despliegue, así que el acceso con Google solo funciona en los dominios añadidos.
+3. Despliega y añade el dominio de producción a **Orígenes autorizados de JavaScript** en Google Cloud. Las URLs de preview cambian en cada despliegue, así que el acceso con Google solo funciona en los dominios añadidos
 
 Las migraciones no se ejecutan al desplegar. Lánzalas en local antes de publicar un cambio de esquema, con la conexión directa o el pooler de sesión (puerto `5432`):
 
