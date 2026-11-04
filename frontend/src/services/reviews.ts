@@ -1,18 +1,20 @@
 import { apiRequest } from './api';
 
 export interface ReviewScores {
+  punctuality: number;
+  treatment: number;
+  participation: number;
   clarity: number;
-  listening: number;
-  preparation: number;
 }
 
 export const CRITERIA: { key: keyof ReviewScores; label: string; hint: string }[] = [
+  { key: 'punctuality', label: 'Puntualidad', hint: '¿Llegó a tiempo y respetó el horario?' },
+  { key: 'treatment', label: 'Trato', hint: '¿Fue respetuoso y agradable?' },
+  { key: 'participation', label: 'Participación', hint: '¿Se implicó y aportó a la sala?' },
   { key: 'clarity', label: 'Claridad', hint: '¿Se le entendía al explicar?' },
-  { key: 'listening', label: 'Escucha', hint: '¿Escuchó y respetó a los demás?' },
-  { key: 'preparation', label: 'Preparación', hint: '¿Llegó con el tema trabajado?' },
 ];
 
-export const MIN_COMMENT_LENGTH = 20;
+export const INITIAL_SCORE = 5;
 
 export interface PendingReview {
   roomId: string;
@@ -25,23 +27,23 @@ export interface FeedbackItem extends ReviewScores {
   id: string;
   reviewerName: string;
   roomTitle: string;
-  comment: string;
   createdAt: string;
 }
 
 export interface FeedbackSummary {
   count: number;
   average: number | null;
+  punctuality: number | null;
+  treatment: number | null;
+  participation: number | null;
   clarity: number | null;
-  listening: number | null;
-  preparation: number | null;
   items: FeedbackItem[];
 }
 
-export const submitReview = (token: string, roomId: string, revieweeId: string, scores: ReviewScores, comment: string) =>
+export const submitReview = (token: string, roomId: string, revieweeId: string, scores: ReviewScores) =>
   apiRequest<unknown>(`/rooms/${encodeURIComponent(roomId)}/reviews`, {
     method: 'POST',
-    body: { revieweeId, ...scores, comment },
+    body: { revieweeId, ...scores },
     token,
   });
 

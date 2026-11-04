@@ -1,15 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, CheckCircle2, DoorClosed, Flag, Lightbulb, Link2, LogOut, MessageSquareQuote, Paperclip, Send, Users } from 'lucide-react';
+import { ArrowLeft, Check, Flag, Lightbulb, Link2, LogOut, MessageSquareQuote, Paperclip, Send, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../services/api';
 import { fetchFriends, type FriendStatus } from '../services/people';
-import { closeRoom, fetchMessages, fetchRoom, joinRoom, leaveRoom, sendMessage, uploadAttachment, type RoomDetail, type RoomMessage } from '../services/rooms';
+import { fetchMessages, fetchRoom, joinRoom, leaveRoom, sendMessage, uploadAttachment, type RoomDetail, type RoomMessage } from '../services/rooms';
 import { ErrorState, LoadingState } from '../components/UIStates';
 import { Avatar } from '../components/Swap';
 import { FriendButton } from '../components/FriendButton';
 import { AttachmentView } from '../components/AttachmentView';
-import { ReviewForm } from '../components/ReviewForm';
+import { InviteDialog } from '../components/InviteDialog';
 import { findYouTubeId, YouTubeEmbed } from '../components/YouTubeEmbed';
 
 const POLL_INTERVAL_MS = 3000;
@@ -32,8 +32,10 @@ export const Room: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [sendError, setSendError] = useState('');
   const [copied, setCopied] = useState(false);
-  const [confirmingClose, setConfirmingClose] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const closeInvite = useCallback(() => setInviting(false), []);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [friendStatuses, setFriendStatuses] = useState<Record<string, FriendStatus>>({});
   const chatRef = useRef<HTMLDivElement>(null);
   const followChat = useRef(true);
@@ -132,32 +134,18 @@ export const Room: React.FC = () => {
     }
   };
 
+  // Al navegar, la ventana obligatoria de feedback detecta lo que quedó pendiente.
   const handleLeave = async () => {
     if (!token) return;
+    setLeaving(true);
     try {
       await leaveRoom(token, id);
       navigate('/rooms');
     } catch (err) {
       setSendError(errorMessage(err));
+      setLeaving(false);
+      setConfirmingLeave(false);
     }
-  };
-
-  const handleClose = async () => {
-    if (!token) return;
-    setClosing(true);
-    setSendError('');
-    try {
-      setRoom(await closeRoom(token, id));
-    } catch (err) {
-      setSendError(errorMessage(err));
-    } finally {
-      setClosing(false);
-      setConfirmingClose(false);
-    }
-  };
-
-  const refreshRoom = () => {
-    if (token) fetchRoom(token, id).then(setRoom).catch(() => undefined);
   };
 
   const handleCopyLink = async () => {
@@ -197,12 +185,13 @@ export const Room: React.FC = () => {
 
   if (!room) return <LoadingState message="Entrando en la sala..." />;
 
-  const others = room.participants.filter(participant => participant.id !== user?.id);
-  const pendingReviews = room.isClosed ? others.filter(participant => !participant.reviewedByMe) : [];
+  const othersInRoom = room.participants.filter(participant => participant.id !== user?.id).length;
 
   return (
     <div className="page max-w-7xl space-y-4">
       {backButton}
+
+      {inviting && !room.isClosed && <InviteDialog roomId={id} onClose={closeInvite} />}
 
       <section className="hero p-5 sm:p-6">
         <div className="relative space-y-1.5">
@@ -218,27 +207,6 @@ export const Room: React.FC = () => {
       </section>
 
       {connectionLost && <ErrorState message="Se perdió la conexión. Reintentando..." />}
-
-      {room.isClosed && (
-        <section className="card p-5 sm:p-6 space-y-4" aria-labelledby="evaluations">
-          <div>
-            <h2 id="evaluations" className="text-2xl text-ink">Sala cerrada: toca evaluar</h2>
-            <p className="text-sm text-muted mt-1">Cuéntale a cada persona cómo ha ido, con sinceridad y respeto. Le ayudará a mejorar.</p>
-          </div>
-          {others.length === 0 && <p className="text-sm text-muted">No había nadie más en la sala, así que no hay nada que evaluar.</p>}
-          {others.length > 0 && pendingReviews.length === 0 && (
-            <p className="text-sm font-bold flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-teach shrink-0" aria-hidden="true" />
-              <span>Ya has evaluado a todos. ¡Gracias!</span>
-            </p>
-          )}
-          <div className="grid md:grid-cols-2 gap-4 items-start">
-            {pendingReviews.map(person => (
-              <ReviewForm key={person.id} roomId={id} person={person} onDone={refreshRoom} />
-            ))}
-          </div>
-        </section>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <section className="card lg:col-span-2 flex flex-col h-[60vh] min-h-96" aria-label="Conversación">
@@ -328,32 +296,36 @@ export const Room: React.FC = () => {
             </ul>
             {!room.isClosed && (
               <>
-            <button onClick={handleCopyLink} className="btn btn-secondary w-full">
-              {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-              <span>{copied ? 'Enlace copiado' : 'Invitar con un enlace'}</span>
-            </button>
-            <button onClick={handleLeave} className="btn btn-secondary w-full">
-              <LogOut className="w-4 h-4" />
-              <span>Salir de la sala</span>
-            </button>
-              </>
-            )}
-            {room.canClose && !confirmingClose && (
-              <button onClick={() => setConfirmingClose(true)} className="btn btn-secondary w-full hover:border-learn! hover:text-learn-strong!">
-                <DoorClosed className="w-4 h-4" aria-hidden="true" />
-                <span>Cerrar la sala</span>
-              </button>
-            )}
-            {room.canClose && confirmingClose && (
-              <div className="rounded-2xl bg-learn-soft p-4 space-y-3" role="alertdialog" aria-label="Confirmar cierre">
-                <p className="text-sm font-bold text-learn-strong">¿Cerrar la sala para todos? Nadie podrá escribir más y empezaréis a evaluaros.</p>
-                <div className="flex gap-2">
-                  <button onClick={handleClose} disabled={closing} className="btn btn-primary flex-1">
-                    {closing ? 'Cerrando...' : 'Sí, cerrar'}
+                <button onClick={() => setInviting(true)} className="btn btn-primary w-full">
+                  <UserPlus className="w-4 h-4" aria-hidden="true" />
+                  <span>Invitar personas</span>
+                </button>
+                <button onClick={handleCopyLink} className="btn btn-secondary w-full">
+                  {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                  <span>{copied ? 'Enlace copiado' : 'Invitar con un enlace'}</span>
+                </button>
+                {!confirmingLeave && (
+                  <button onClick={() => setConfirmingLeave(true)} className="btn btn-secondary w-full">
+                    <LogOut className="w-4 h-4" />
+                    <span>Salir de la sala</span>
                   </button>
-                  <button onClick={() => setConfirmingClose(false)} disabled={closing} className="btn btn-secondary flex-1">Cancelar</button>
-                </div>
-              </div>
+                )}
+                {confirmingLeave && (
+                  <div className="rounded-2xl bg-learn-soft p-4 space-y-3" role="alertdialog" aria-label="Confirmar salida">
+                    <p className="text-sm font-bold text-learn-strong">
+                      {othersInRoom === 0
+                        ? 'Eres la última persona: la sala se cerrará y ya nadie podrá ver sus mensajes ni archivos.'
+                        : 'Dejarás de ver sus mensajes y archivos, y tendrás que evaluar a tus compañeros para poder entrar en otra sala.'}
+                    </p>
+                    <div className="flex gap-2">
+                      <button onClick={handleLeave} disabled={leaving} className="btn btn-primary flex-1">
+                        {leaving ? 'Saliendo...' : 'Sí, salir'}
+                      </button>
+                      <button onClick={() => setConfirmingLeave(false)} disabled={leaving} className="btn btn-secondary flex-1">Cancelar</button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </section>
 

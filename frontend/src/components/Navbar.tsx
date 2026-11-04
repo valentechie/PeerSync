@@ -1,12 +1,36 @@
-import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, GraduationCap, MessagesSquare, Mic, Users, User, LogOut } from 'lucide-react';
+import { fetchInvitations } from '../services/invitations';
 import { SwapMark } from './Swap';
 
+const INVITATION_POLL_MS = 15000;
+
 export const Navbar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [invitationCount, setInvitationCount] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    const load = () => {
+      fetchInvitations(token)
+        .then(invitations => setInvitationCount(invitations.length))
+        .catch(() => undefined);
+    };
+    load();
+    const timer = setInterval(load, INVITATION_POLL_MS);
+    return () => clearInterval(timer);
+  }, [token, pathname]);
+
+  const badge = (path: string) =>
+    path === '/rooms' && invitationCount > 0 ? (
+      <span className="ml-0.5 min-w-4 h-4 px-1 rounded-full bg-sun text-night text-[10px] font-extrabold inline-flex items-center justify-center" aria-label={`${invitationCount} invitaciones`}>
+        {invitationCount}
+      </span>
+    ) : null;
 
   const navItems = [
     { name: 'Salas', short: 'Salas', path: '/rooms', icon: MessagesSquare },
@@ -46,6 +70,7 @@ export const Navbar: React.FC = () => {
                 >
                   <Icon className="w-4 h-4" />
                   <span>{item.name}</span>
+                  {badge(item.path)}
                 </NavLink>
               );
             })}
@@ -83,7 +108,10 @@ export const Navbar: React.FC = () => {
               }
             >
               <Icon className="w-4 h-4" />
-              <span>{item.short}</span>
+              <span className="inline-flex items-center">
+                {item.short}
+                {badge(item.path)}
+              </span>
             </NavLink>
           );
         })}

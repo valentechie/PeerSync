@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../services/api';
 import { createRoom, fetchRooms, type RoomSummary } from '../services/rooms';
 import { EmptyState, ErrorState, LoadingState } from '../components/UIStates';
+import { InvitationsPanel } from '../components/InvitationsPanel';
 
 export const Rooms: React.FC = () => {
   const { token, user } = useAuth();
@@ -64,6 +65,8 @@ export const Rooms: React.FC = () => {
           </p>
         </div>
       </section>
+
+      <InvitationsPanel />
 
       <div className="grid lg:grid-cols-3 gap-6 items-start">
         <section className="card p-6 sm:p-8" aria-labelledby="create-room">

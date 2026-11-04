@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
+import { MandatoryFeedback } from './components/MandatoryFeedback';
 import { LoadingState } from './components/UIStates';
 
 import { Login } from './pages/Login';
@@ -26,6 +27,7 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">{children}</main>
+      <MandatoryFeedback />
     </div>
   );
 };

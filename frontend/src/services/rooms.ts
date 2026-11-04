@@ -11,8 +11,7 @@ export interface RoomSummary {
 }
 
 export interface RoomDetail extends RoomSummary {
-  participants: { id: string; name: string; reviewedByMe: boolean }[];
-  canClose: boolean;
+  participants: { id: string; name: string }[];
 }
 
 export interface RoomAttachment {
@@ -43,7 +42,7 @@ export const joinRoom = (token: string, id: string) =>
   apiRequest<RoomDetail>(`/rooms/${encodeURIComponent(id)}/join`, { method: 'POST', token });
 
 export const leaveRoom = (token: string, id: string) =>
-  apiRequest<void>(`/rooms/${encodeURIComponent(id)}/leave`, { method: 'POST', token });
+  apiRequest<unknown>(`/rooms/${encodeURIComponent(id)}/leave`, { method: 'POST', token });
 
 export const fetchMessages = (token: string, id: string) =>
   apiRequest<RoomMessage[]>(`/rooms/${encodeURIComponent(id)}/messages`, { token });
@@ -56,6 +55,3 @@ export const uploadAttachment = (token: string, id: string, file: File) =>
 
 export const fetchAttachment = (token: string, roomId: string, attachmentId: string) =>
   apiBlob(`/rooms/${encodeURIComponent(roomId)}/attachments/${encodeURIComponent(attachmentId)}`, token);
-
-export const closeRoom = (token: string, id: string) =>
-  apiRequest<RoomDetail>(`/rooms/${encodeURIComponent(id)}/close`, { method: 'POST', token });
