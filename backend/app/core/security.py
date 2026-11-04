@@ -1,10 +1,10 @@
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from uuid import UUID
 
-import bcrypt
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -16,16 +16,19 @@ from app.models.user import User
 
 JWT_ALGORITHM = "HS256"
 
-# Contador en memoria y por proceso; suficiente para el MVP con un solo worker.
-limiter = Limiter(key_func=get_remote_address)
+
+def client_ip(request: Request) -> str:
+    # Vercel sobrescribe X-Forwarded-For, así que allí es fiable. Fuera de Vercel la
+    # cabecera la controla el cliente y permitiría saltarse el límite.
+    forwarded_for = request.headers.get("x-forwarded-for") if os.environ.get("VERCEL") else None
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return get_remote_address(request)
 
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-
-def verify_password(password: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(password.encode(), password_hash.encode())
+# Contador en memoria y por proceso: en Vercel cada instancia lleva su propia cuenta,
+# así que el límite es orientativo. Un límite estricto exigiría un almacén compartido.
+limiter = Limiter(key_func=client_ip)
 
 
 def create_access_token(user_id: UUID) -> str:

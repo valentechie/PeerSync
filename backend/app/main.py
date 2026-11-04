@@ -9,7 +9,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.security import limiter
 
-app = FastAPI(title="Swap4Edu API")
+app = FastAPI(title="PeerSync API")
 app.state.limiter = limiter
 
 app.add_middleware(
@@ -23,7 +23,7 @@ app.add_middleware(
 @app.exception_handler(RequestValidationError)
 def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
     # La respuesta por defecto de FastAPI repite el valor recibido (`input`),
-    # lo que devolvería la contraseña en claro.
+    # lo que devolvería el token de Google en claro.
     errors = [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
     return JSONResponse({"detail": errors}, status.HTTP_422_UNPROCESSABLE_CONTENT)
 

@@ -1,0 +1,12 @@
+{
+  "name": "peersync",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --reload",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "test": "cd backend && .venv/bin/python -m pytest -q",
+    "deploy:preview": "npx vercel@latest",
+    "deploy": "npx vercel@latest --prod"
+  }
+}

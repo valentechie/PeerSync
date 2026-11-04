@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import create_access_token, limiter
-from app.models.user import User
-from app.schemas.user import AuthResponse, UserCreate, UserLogin, UserRead
+from app.schemas.user import AuthResponse, GoogleLogin, UserRead
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -14,29 +13,28 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-def _auth_response(user: User) -> AuthResponse:
+# `request` no se usa aquí, pero slowapi lo exige en la firma.
+@router.post("/google", response_model=AuthResponse)
+@limiter.limit("10/minute")
+def google_login(request: Request, data: GoogleLogin, db: DbSession) -> AuthResponse:
+    try:
+        identity = auth_service.verify_google_credential(data.credential)
+        user = auth_service.get_or_create_google_user(db, identity)
+    except auth_service.InvalidGoogleCredentialError as exc:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "No se pudo verificar tu cuenta de Google"
+        ) from exc
+    except auth_service.GoogleUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "No se pudo contactar con Google, inténtalo de nuevo"
+        ) from exc
+    except auth_service.InactiveAccountError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esta cuenta está desactivada") from exc
+    except auth_service.GoogleAccountConflictError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Este correo ya está vinculado a otra cuenta de Google"
+        ) from exc
     return AuthResponse(
         access_token=create_access_token(user.id),
         user=UserRead.model_validate(user),
     )
-
-
-# `request` no se usa aquí, pero slowapi lo exige en la firma.
-@router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")
-def register(request: Request, data: UserCreate, db: DbSession) -> AuthResponse:
-    try:
-        user = auth_service.register_user(db, data)
-    except auth_service.EmailAlreadyRegisteredError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está registrado") from exc
-    return _auth_response(user)
-
-
-@router.post("/login", response_model=AuthResponse)
-@limiter.limit("10/minute")
-def login(request: Request, data: UserLogin, db: DbSession) -> AuthResponse:
-    try:
-        user = auth_service.authenticate_user(db, data)
-    except auth_service.InvalidCredentialsError as exc:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Email o contraseña incorrectos") from exc
-    return _auth_response(user)

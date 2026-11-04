@@ -3,9 +3,13 @@ from collections.abc import Iterator
 from enum import Enum as PyEnum
 
 from sqlalchemy import Enum, MetaData, create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
+
+SUPABASE_TRANSACTION_POOLER_PORT = 6543
 
 # Nombres de constraints estables para que las migraciones de Alembic sean reproducibles.
 NAMING_CONVENTION = {
@@ -33,7 +37,16 @@ def str_enum(enum_class: type[PyEnum], name: str) -> Enum:
     )
 
 
-engine = create_engine(get_settings().database_url, pool_pre_ping=True)
+def engine_options(database_url: str) -> dict:
+    """En serverless se conecta por el pooler de transacciones de Supabase, que ya
+    reutiliza las conexiones y no admite prepared statements."""
+    if make_url(database_url).port == SUPABASE_TRANSACTION_POOLER_PORT:
+        return {"poolclass": NullPool, "connect_args": {"prepare_threshold": None}}
+    return {"pool_pre_ping": True}
+
+
+_database_url = get_settings().database_url
+engine = create_engine(_database_url, **engine_options(_database_url))
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 

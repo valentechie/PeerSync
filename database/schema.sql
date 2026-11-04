@@ -241,5 +241,15 @@ ALTER TABLE user_skills ENABLE ROW LEVEL SECURITY;
 
 UPDATE alembic_version SET version_num='0003' WHERE alembic_version.version_num = '0002';
 
+-- Running upgrade 0003 -> 0004
+
+ALTER TABLE users ADD COLUMN google_sub VARCHAR(255);
+
+CREATE UNIQUE INDEX ix_users_google_sub ON users (google_sub);
+
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+
+UPDATE alembic_version SET version_num='0004' WHERE alembic_version.version_num = '0003';
+
 COMMIT;
 

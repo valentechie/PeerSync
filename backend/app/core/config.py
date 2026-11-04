@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     database_url: str
     jwt_secret: str = Field(min_length=32)
+    google_client_id: str = Field(min_length=1)
     access_token_expire_minutes: int = Field(default=60, gt=0)
     cors_origins: str = "http://localhost:5173"
 

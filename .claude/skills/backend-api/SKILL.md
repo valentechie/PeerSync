@@ -1,11 +1,11 @@
 ---
 name: backend-api
-description: Use when building, extending or reviewing the hack4edu/Swap4Edu backend — FastAPI endpoints, SQLAlchemy models, Pydantic schemas, services, auth, or anything under backend/app/. Also use when wiring the Gemini-powered AI features (SkillSwap matching, StudyMind, TeachBack).
+description: Use when building, extending or reviewing the hack4edu/PeerSync backend — FastAPI endpoints, SQLAlchemy models, Pydantic schemas, services, auth, or anything under backend/app/. Also use when wiring the Gemini-powered AI features (SkillSwap matching, StudyMind, TeachBack).
 ---
 
-# Backend & API — Swap4Edu (Hack4Edu 2026)
+# Backend & API — PeerSync (Hack4Edu 2026)
 
-Guía para construir el backend de Swap4Edu: una app de intercambio de
+Guía para construir el backend de PeerSync: una app de intercambio de
 habilidades entre estudiantes con tres motores de IA (SkillSwap AI,
 StudyMind AI, TeachBack AI).
 
@@ -13,7 +13,7 @@ StudyMind AI, TeachBack AI).
 
 - **Backend**: Python + FastAPI
 - **Base de datos**: PostgreSQL (SQLAlchemy + Alembic para migraciones)
-- **Auth**: Supabase Auth o JWT propio (bcrypt/passlib para hashing)
+- **Auth**: Google SSO como único acceso (ID token verificado en backend) + JWT propio
 - **IA**: Gemini API — **solo invocada desde el backend, nunca desde el frontend**
 - **Tiempo real**: WebSockets cuando la sala de estudio lo requiera
 - **Frontend** (ya existe, no tocar su stack): React + TypeScript + Vite + Tailwind

@@ -1,2 +1,38 @@
 # PeerSync
 Nuestra propuesta para Hack4Edu
+
+## Desarrollo local
+
+```bash
+cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+cp .env.example .env   # y rellena los valores
+.venv/bin/uvicorn app.main:app --reload
+```
+
+```bash
+cd frontend && npm install
+cp .env.example .env
+npm run dev
+```
+
+## Despliegue en Vercel
+
+`vercel.json` despliega frontend y API en un solo proyecto: `/api/*` va a FastAPI y el resto a la web de Vite.
+
+1. Importa el repositorio en Vercel y deja **Root Directory** en la raíz. Si te pide un preset, elige **Services**.
+2. Añade estas variables de entorno al proyecto:
+
+| Variable | Valor |
+|---|---|
+| `DATABASE_URL` | Cadena **Transaction pooler** de Supabase (puerto `6543`) |
+| `JWT_SECRET` | Nuevo, de al menos 32 caracteres: `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| `GOOGLE_CLIENT_ID` | ID de cliente OAuth de Google |
+| `VITE_GOOGLE_CLIENT_ID` | El mismo ID (se usa al compilar el frontend) |
+
+3. Despliega y añade el dominio de producción a **Orígenes autorizados de JavaScript** en Google Cloud. Las URLs de preview cambian en cada despliegue, así que el acceso con Google solo funciona en los dominios añadidos.
+
+Las migraciones no se ejecutan al desplegar. Lánzalas en local antes de publicar un cambio de esquema, con la conexión directa o el pooler de sesión (puerto `5432`):
+
+```bash
+cd backend && .venv/bin/alembic upgrade head
+```

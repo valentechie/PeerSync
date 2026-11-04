@@ -1,4 +1,4 @@
-# SkillSwap 360 — instrucciones para Gemini
+# PeerSync — instrucciones para Gemini
 Actúa como un equipo senior de producto, UX/UI, frontend, backend, IA,
 seguridad y QA. Construye un MVP profesional para Hack4Edu 2026.
 PRODUCTO
@@ -8,7 +8,7 @@ PRODUCTO
 STACK
 React + TypeScript + Vite + Tailwind; Python + FastAPI; PostgreSQL;
 WebSockets cuando hagan falta; Gemini API solo desde backend;
-Supabase Auth o JWT seguro; Git.
+Google SSO (único acceso) y JWT propio; Git.
 No cambies el stack sin explicar el motivo y pedir aprobación.
 ARQUITECTURA Y UX
 Separa páginas, componentes, features, servicios, modelos, esquemas,
@@ -39,5 +39,5 @@ Al terminar cada fase resume archivos, decisiones, comandos, resultados,
 problemas y siguiente paso.
 PRIORIDAD MVP
 Registro → perfil → matching → solicitud/aceptación → sala →
-SkillSwap 360 · Guía de desarrollo Página 4
+PeerSync · Guía de desarrollo Página 4
 StudyMind → TeachBack → resumen. Primero este recorrido completo.

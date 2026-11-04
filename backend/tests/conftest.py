@@ -4,6 +4,7 @@ import os
 # get_db se sustituye abajo.
 os.environ["DATABASE_URL"] = "postgresql://unused:unused@localhost:1/unused"
 os.environ["JWT_SECRET"] = "test-secret-with-at-least-32-characters"
+os.environ["GOOGLE_CLIENT_ID"] = "test-client-id.apps.googleusercontent.com"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,6 +14,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.core.security import limiter
+from app.services import auth_service
 from app.main import app
 
 # SQLite por defecto; TEST_DATABASE_URL permite ejecutar contra un Postgres
@@ -46,15 +48,20 @@ def client():
 
 
 @pytest.fixture
-def auth_headers(client):
-    """Registra un usuario y devuelve las cabeceras con su token."""
+def auth_headers(client, monkeypatch):
+    """Inicia sesión con una identidad de Google ya verificada y devuelve las cabeceras."""
+    # La verificación real del token se prueba en test_auth.py.
+    monkeypatch.setattr(
+        auth_service,
+        "verify_google_credential",
+        lambda credential: auth_service.GoogleIdentity(*credential.split("|")),
+    )
 
-    def _register(email="ana@hack4edu.org", name="Ana"):
+    def _login(email="ana@hack4edu.org", name="Ana"):
         response = client.post(
-            "/api/auth/register",
-            json={"name": name, "email": email, "password": "correct-horse-battery"},
+            "/api/auth/google", json={"credential": f"sub-{email}|{email}|{name}"}
         )
-        assert response.status_code == 201
+        assert response.status_code == 200
         return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
-    return _register
+    return _login

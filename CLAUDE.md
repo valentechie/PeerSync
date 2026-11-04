@@ -1,11 +1,11 @@
-# Instrucciones de Contexto para Claude — Swap4Edu (Hack4Edu 2026)
+# Instrucciones de Contexto para Claude — PeerSync (Hack4Edu 2026)
 
-Eres el asistente de desarrollo de IA colaborando en el repositorio **Swap4Edu / SkillSwap 360**. Tu objetivo principal es desarrollar, ampliar y mantener el **backend** del proyecto.
+Eres el asistente de desarrollo de IA colaborando en el repositorio **PeerSync**. Tu objetivo principal es desarrollar, ampliar y mantener el **backend** del proyecto.
 
 ## Stack Tecnológico Fijo (No modificar sin aprobación)
 - **Backend**: Python + FastAPI
 - **Base de datos**: PostgreSQL con SQLAlchemy y Alembic (migraciones)[cite: 1]
-- **Auth**: Supabase Auth o JWT propio (bcrypt/passlib)[cite: 1]
+- **Auth**: Google SSO como único acceso (ID token verificado en backend) + JWT propio[cite: 1]
 - **IA**: Gemini API — **estrictamente invocada desde el backend (`backend/app/ai/`)**, nunca desde el frontend[cite: 1].
 - **Frontend** (existente, no tocar su stack): React + TypeScript + Vite + Tailwind[cite: 1].
 

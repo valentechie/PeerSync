@@ -1,4 +1,4 @@
-# API de Swap4Edu
+# API de PeerSync
 
 Base: `/api`. Documentación interactiva con el backend en marcha: `/docs`.
 
@@ -8,10 +8,13 @@ Errores: `{"detail": "..."}`, o una lista de `{loc, msg, type}` en los `422` (nu
 
 ## Auth
 
+El único acceso es Google: no hay registro ni login con contraseña. La primera vez se crea la cuenta; si ya existía una con ese email verificado, se vincula.
+
 | Método | Ruta | Cuerpo | Respuestas | Límite |
 |---|---|---|---|---|
-| POST | `/auth/register` | `name`, `email`, `password` (8 caracteres a 72 bytes) | `201` token y usuario · `409` email ya registrado · `422` | 5/min por IP |
-| POST | `/auth/login` | `email`, `password` | `200` token y usuario · `401` credenciales incorrectas | 10/min por IP |
+| POST | `/auth/google` | `credential` (ID token de Google) | `200` token y usuario · `401` token no válido o email sin verificar · `403` cuenta desactivada · `409` email vinculado a otra cuenta de Google · `503` Google no disponible | 10/min por IP |
+
+El backend verifica firma, caducidad, emisor y que la audiencia sea `GOOGLE_CLIENT_ID`.
 
 Respuesta: `{"access_token", "token_type": "bearer", "user": {"id", "name", "email", "created_at"}}`. El token caduca a los `ACCESS_TOKEN_EXPIRE_MINUTES`.
 

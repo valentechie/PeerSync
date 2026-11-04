@@ -8,6 +8,7 @@ __pycache__/
 .pytest_cache/
 dist/
 build/
+.vercel
 # backend/.env.example — sin valores reales
 DATABASE_URL=
 GEMINI_API_KEY=

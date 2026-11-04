@@ -1,4 +1,4 @@
-# Base de datos de Swap4Edu
+# Base de datos de PeerSync
 
 PostgreSQL en Supabase. El esquema se gestiona con Alembic (`backend/alembic/`); `database/schema.sql` es una copia generada con `alembic upgrade head --sql`, no se edita a mano.
 
@@ -10,7 +10,7 @@ Supabase publica el esquema `public` en una API REST. **Toda tabla nueva debe ac
 
 | Tabla | Contenido | Reglas clave |
 |---|---|---|
-| `users` | Cuenta: nombre, email, hash | Email único, en minúsculas |
+| `users` | Cuenta: nombre, email, `google_sub` | Email y `google_sub` únicos; email en minúsculas; `password_hash` sin uso (acceso solo con Google) |
 | `profiles` | Biografía | Se crea al guardar por primera vez |
 | `skills` | Catálogo de habilidades | Nombre único sin distinguir mayúsculas |
 | `user_skills` | Qué ofrece o busca cada usuario | `kind`: `offering` o `seeking` |
