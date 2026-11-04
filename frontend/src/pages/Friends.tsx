@@ -95,7 +95,7 @@ export const Friends: React.FC = () => {
             {results.map(person => (
               <li key={person.id} className="flex items-center justify-between gap-3 py-3 min-w-0">
                 <span className="flex items-center gap-3 min-w-0">
-                  <Avatar name={person.name} className="w-10 h-10 text-base" />
+                  <Avatar name={person.name} photoUrl={person.photoUrl} className="w-10 h-10 text-base" />
                   <span className="min-w-0">
                     <span className="block font-bold truncate">{person.name}</span>
                     {person.study && <span className="block text-xs text-muted truncate">{person.study}</span>}
@@ -125,7 +125,7 @@ export const Friends: React.FC = () => {
             {overview.received.map(person => (
               <li key={person.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <span className="flex items-center gap-3 min-w-0">
-                  <Avatar name={person.name} tone="learn" className="w-10 h-10 text-base" />
+                  <Avatar name={person.name} photoUrl={person.photoUrl} tone="learn" className="w-10 h-10 text-base" />
                   <span className="font-bold truncate">{person.name}</span>
                 </span>
                 <span className="flex gap-2">
@@ -157,7 +157,7 @@ export const Friends: React.FC = () => {
             {overview.friends.map(friend => (
               <article key={friend.id} className="card p-5 space-y-3 min-w-0">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Avatar name={friend.name} className="w-12 h-12 text-xl" />
+                  <Avatar name={friend.name} photoUrl={friend.photoUrl} className="w-12 h-12 text-xl" />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-lg text-ink truncate">{friend.name}</h3>
                     {friend.study && <p className="text-sm text-muted truncate">{friend.study}</p>}
@@ -172,8 +172,8 @@ export const Friends: React.FC = () => {
                   </button>
                 </div>
                 <div className="border-t border-line pt-3">
-                  <p className="eyebrow font-sans text-teach mb-2">Sus salas</p>
-                  {friend.rooms.length === 0 && <p className="text-sm text-muted">Todavía no está en ninguna sala.</p>}
+                  <p className="eyebrow font-sans text-teach mb-2">Salas a las que puedes entrar</p>
+                  {friend.rooms.length === 0 && <p className="text-sm text-muted">Ninguna por ahora. Las salas son privadas hasta que te invitan.</p>}
                   <ul className="space-y-1.5">
                     {friend.rooms.map(room => (
                       <li key={room.id}>

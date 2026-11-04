@@ -358,5 +358,103 @@ ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_preparation_range 
 
 UPDATE alembic_version SET version_num='0010' WHERE alembic_version.version_num = '0009';
 
+-- Running upgrade 0010 -> 0011
+
+ALTER TABLE session_participants ADD COLUMN wants_to_close BOOLEAN DEFAULT false NOT NULL;
+
+CREATE TABLE room_feedback (
+    id UUID NOT NULL, 
+    session_id UUID NOT NULL, 
+    user_id UUID NOT NULL, 
+    rating INTEGER NOT NULL, 
+    comment TEXT NOT NULL, 
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+    CONSTRAINT pk_room_feedback PRIMARY KEY (id), 
+    CONSTRAINT ck_room_feedback_rating_range CHECK (rating BETWEEN 1 AND 5), 
+    CONSTRAINT fk_room_feedback_session_id_study_sessions FOREIGN KEY(session_id) REFERENCES study_sessions (id) ON DELETE CASCADE, 
+    CONSTRAINT fk_room_feedback_user_id_users FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+    CONSTRAINT uq_room_feedback_one_per_user UNIQUE (session_id, user_id)
+);
+
+ALTER TABLE room_feedback ENABLE ROW LEVEL SECURITY;
+
+UPDATE alembic_version SET version_num='0011' WHERE alembic_version.version_num = '0010';
+
+-- Running upgrade 0011 -> 0012
+
+DROP TABLE room_feedback;
+
+ALTER TABLE session_participants DROP COLUMN wants_to_close;
+
+ALTER TABLE session_participants ADD COLUMN left_at TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE session_reviews DROP CONSTRAINT ck_session_reviews_rating_range;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_rating_range CHECK (rating BETWEEN 0 AND 5);
+
+ALTER TABLE session_reviews DROP CONSTRAINT ck_session_reviews_clarity_range;
+
+ALTER TABLE session_reviews DROP COLUMN clarity;
+
+ALTER TABLE session_reviews DROP CONSTRAINT ck_session_reviews_listening_range;
+
+ALTER TABLE session_reviews DROP COLUMN listening;
+
+ALTER TABLE session_reviews DROP CONSTRAINT ck_session_reviews_preparation_range;
+
+ALTER TABLE session_reviews DROP COLUMN preparation;
+
+ALTER TABLE session_reviews ADD COLUMN punctuality INTEGER NOT NULL;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_punctuality_range CHECK (punctuality BETWEEN 0 AND 10);
+
+ALTER TABLE session_reviews ADD COLUMN treatment INTEGER NOT NULL;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_treatment_range CHECK (treatment BETWEEN 0 AND 10);
+
+ALTER TABLE session_reviews ADD COLUMN participation INTEGER NOT NULL;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_participation_range CHECK (participation BETWEEN 0 AND 10);
+
+ALTER TABLE session_reviews ADD COLUMN clarity INTEGER NOT NULL;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_clarity_range CHECK (clarity BETWEEN 0 AND 10);
+
+UPDATE alembic_version SET version_num='0012' WHERE alembic_version.version_num = '0011';
+
+-- Running upgrade 0012 -> 0013
+
+CREATE TABLE room_invitations (
+    id UUID NOT NULL, 
+    session_id UUID NOT NULL, 
+    inviter_id UUID NOT NULL, 
+    invitee_id UUID NOT NULL, 
+    status VARCHAR(20) NOT NULL, 
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+    CONSTRAINT pk_room_invitations PRIMARY KEY (id), 
+    CONSTRAINT ck_room_invitations_invitation_status CHECK (status IN ('pending', 'declined')), 
+    CONSTRAINT ck_room_invitations_not_self CHECK (inviter_id <> invitee_id), 
+    CONSTRAINT fk_room_invitations_session_id_study_sessions FOREIGN KEY(session_id) REFERENCES study_sessions (id) ON DELETE CASCADE, 
+    CONSTRAINT fk_room_invitations_inviter_id_users FOREIGN KEY(inviter_id) REFERENCES users (id) ON DELETE CASCADE, 
+    CONSTRAINT fk_room_invitations_invitee_id_users FOREIGN KEY(invitee_id) REFERENCES users (id) ON DELETE CASCADE, 
+    CONSTRAINT uq_room_invitations_one_per_person UNIQUE (session_id, invitee_id)
+);
+
+CREATE INDEX ix_room_invitations_invitee_id ON room_invitations (invitee_id);
+
+ALTER TABLE room_invitations ENABLE ROW LEVEL SECURITY;
+
+UPDATE alembic_version SET version_num='0013' WHERE alembic_version.version_num = '0012';
+
+-- Running upgrade 0013 -> 0014
+
+ALTER TABLE profiles ADD COLUMN photo_data BYTEA;
+
+ALTER TABLE profiles ADD COLUMN photo_type VARCHAR(20);
+
+ALTER TABLE profiles ADD COLUMN photo_version INTEGER DEFAULT '0' NOT NULL;
+
+UPDATE alembic_version SET version_num='0014' WHERE alembic_version.version_num = '0013';
+
 COMMIT;
 

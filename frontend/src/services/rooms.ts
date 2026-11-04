@@ -11,7 +11,7 @@ export interface RoomSummary {
 }
 
 export interface RoomDetail extends RoomSummary {
-  participants: { id: string; name: string }[];
+  participants: { id: string; name: string; photoUrl: string | null }[];
 }
 
 export interface RoomAttachment {
@@ -25,6 +25,7 @@ export interface RoomMessage {
   id: string;
   senderId: string;
   senderName: string;
+  senderPhotoUrl: string | null;
   content: string;
   createdAt: string;
   attachment: RoomAttachment | null;
@@ -38,8 +39,15 @@ export const createRoom = (token: string, title: string, objective: string) =>
 export const fetchRoom = (token: string, id: string) =>
   apiRequest<RoomDetail>(`/rooms/${encodeURIComponent(id)}`, { token });
 
-export const joinRoom = (token: string, id: string) =>
-  apiRequest<RoomDetail>(`/rooms/${encodeURIComponent(id)}/join`, { method: 'POST', token });
+export const joinRoom = (token: string, id: string, inviteToken?: string | null) =>
+  apiRequest<RoomDetail>(`/rooms/${encodeURIComponent(id)}/join`, {
+    method: 'POST',
+    body: inviteToken ? { inviteToken } : undefined,
+    token,
+  });
+
+export const fetchInviteLink = (token: string, id: string) =>
+  apiRequest<{ token: string }>(`/rooms/${encodeURIComponent(id)}/invite-link`, { token });
 
 export const leaveRoom = (token: string, id: string) =>
   apiRequest<unknown>(`/rooms/${encodeURIComponent(id)}/leave`, { method: 'POST', token });

@@ -1,4 +1,5 @@
 import os
+from uuid import UUID
 
 # Deben definirse antes de importar la app. El engine de la app nunca se conecta:
 # get_db se sustituye abajo.
@@ -12,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
-from app.core.security import limiter
+from app.core.security import create_room_invite_token, limiter
 from app.main import app
 
 # SQLite por defecto; TEST_DATABASE_URL permite ejecutar contra un Postgres
@@ -43,6 +44,12 @@ def client():
     yield TestClient(app)
     app.dependency_overrides.clear()
     engine.dispose()
+
+
+def join_room(client, room_id, headers):
+    """Entra en una sala con un enlace de invitación válido."""
+    token = create_room_invite_token(UUID(str(room_id)))
+    return client.post(f"/api/rooms/{room_id}/join", json={"inviteToken": token}, headers=headers)
 
 
 @pytest.fixture

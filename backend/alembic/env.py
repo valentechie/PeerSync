@@ -4,7 +4,7 @@ from alembic import context
 
 from app.core.config import get_settings
 from app.core.database import Base, engine
-from app.models import friendship, match, message, profile, session, skill, user  # noqa: F401  (registran las tablas en Base.metadata)
+from app.models import friendship, invitation, match, message, profile, session, skill, user  # noqa: F401  (registran las tablas en Base.metadata)
 
 if context.config.config_file_name is not None:
     fileConfig(context.config.config_file_name)

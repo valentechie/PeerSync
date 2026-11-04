@@ -21,7 +21,7 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return <LoadingState message="Recuperando tu sesión..." />;
   }
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
   return (
     <div className="min-h-screen flex flex-col">

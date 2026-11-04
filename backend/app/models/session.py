@@ -44,6 +44,8 @@ class SessionParticipant(Base):
     session_id: Mapped[UUID] = mapped_column(ForeignKey("study_sessions.id", ondelete="CASCADE"), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # La fila se conserva al salir: de ella salen las evaluaciones que esa persona debe.
+    left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class SessionReview(Base):
@@ -52,10 +54,11 @@ class SessionReview(Base):
     __tablename__ = "session_reviews"
     __table_args__ = (
         UniqueConstraint("session_id", "reviewer_id", "reviewee_id", name="uq_session_reviews_one_per_pair"),
-        CheckConstraint("rating BETWEEN 1 AND 5", name="rating_range"),
-        CheckConstraint("clarity BETWEEN 1 AND 5", name="clarity_range"),
-        CheckConstraint("listening BETWEEN 1 AND 5", name="listening_range"),
-        CheckConstraint("preparation BETWEEN 1 AND 5", name="preparation_range"),
+        CheckConstraint("rating BETWEEN 0 AND 5", name="rating_range"),
+        CheckConstraint("punctuality BETWEEN 0 AND 10", name="punctuality_range"),
+        CheckConstraint("treatment BETWEEN 0 AND 10", name="treatment_range"),
+        CheckConstraint("participation BETWEEN 0 AND 10", name="participation_range"),
+        CheckConstraint("clarity BETWEEN 0 AND 10", name="clarity_range"),
         CheckConstraint("reviewer_id <> reviewee_id", name="not_self"),
     )
 
@@ -64,9 +67,11 @@ class SessionReview(Base):
     reviewer_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     reviewee_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     rating: Mapped[int] = mapped_column(Integer)
+    punctuality: Mapped[int] = mapped_column(Integer)
+    treatment: Mapped[int] = mapped_column(Integer)
+    participation: Mapped[int] = mapped_column(Integer)
     clarity: Mapped[int] = mapped_column(Integer)
-    listening: Mapped[int] = mapped_column(Integer)
-    preparation: Mapped[int] = mapped_column(Integer)
+    # Sin uso: la evaluación ya no pide escribir.
     comment: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

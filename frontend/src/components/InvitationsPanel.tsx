@@ -56,14 +56,17 @@ export const InvitationsPanel: React.FC = () => {
     }
   };
 
-  if (invitations.length === 0 && !error) return null;
-
   return (
     <section className="space-y-3" aria-labelledby="my-invitations">
-      <h2 id="my-invitations" className="text-2xl text-ink flex items-center gap-2">
-        <Mail className="w-6 h-6 text-teach-strong" aria-hidden="true" />
-        <span>Te han invitado ({invitations.length})</span>
-      </h2>
+      <div>
+        <h2 id="my-invitations" className="text-2xl text-ink flex items-center gap-2">
+          <Mail className="w-6 h-6 text-teach-strong shrink-0" aria-hidden="true" />
+          <span>Salas disponibles{invitations.length > 0 && ` (${invitations.length})`}</span>
+        </h2>
+        <p className="text-sm text-muted mt-1">
+          {invitations.length > 0 ? 'Salas a las que te han invitado.' : 'Aquí aparecerán las salas a las que te inviten.'}
+        </p>
+      </div>
       {error && <ErrorState message={error} />}
       <div className="grid sm:grid-cols-2 gap-4">
         {invitations.map(invitation => (

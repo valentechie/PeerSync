@@ -27,4 +27,4 @@ class MessageAttachment(Base):
     file_name: Mapped[str] = mapped_column(String(200))
     content_type: Mapped[str] = mapped_column(String(50))
     size: Mapped[int] = mapped_column(Integer)
-    data: Mapped[bytes] = deferred(mapped_column(LargeBinary))
+    data: Mapped[bytes] = deferred(mapped_column(LargeBinary, nullable=False))

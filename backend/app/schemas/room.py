@@ -17,6 +17,16 @@ class RoomCreate(_Camel):
     objective: Annotated[str, StringConstraints(strip_whitespace=True, max_length=300)] = ""
 
 
+class JoinRequest(_Camel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra="forbid")
+
+    invite_token: Annotated[str, StringConstraints(max_length=1000)] | None = None
+
+
+class InviteLink(_Camel):
+    token: str
+
+
 class RoomSummary(_Camel):
     id: UUID
     title: str
@@ -31,12 +41,11 @@ class ParticipantRead(_Camel):
     # Solo id y nombre: el email no se comparte con otros participantes.
     id: UUID
     name: str
-    reviewed_by_me: bool
+    photo_url: str | None
 
 
 class RoomDetail(RoomSummary):
     participants: list[ParticipantRead]
-    can_close: bool
 
 
 class MessageCreate(_Camel):
@@ -56,6 +65,7 @@ class MessageRead(_Camel):
     id: UUID
     sender_id: UUID
     sender_name: str
+    sender_photo_url: str | None = None
     content: str
     created_at: datetime
     attachment: AttachmentRead | None = None

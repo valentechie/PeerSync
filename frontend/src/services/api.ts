@@ -10,6 +10,9 @@ export class ApiError extends Error {
   }
 }
 
+/** Dirección completa de un recurso que devuelve la API, como una foto de perfil. */
+export const apiAssetUrl = (path: string) => `${API_BASE_URL}${path}`;
+
 export const errorMessage = (err: unknown) =>
   err instanceof Error ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
@@ -58,9 +61,9 @@ export async function apiRequest<T>(path: string, options: { method?: string; bo
   throw await toApiError(response);
 }
 
-export async function apiUpload<T>(path: string, file: File, token: string): Promise<T> {
+export async function apiUpload<T>(path: string, file: File, token: string, method = 'POST'): Promise<T> {
   const response = await send(path, {
-    method: 'POST',
+    method,
     headers: { 'Content-Type': 'application/octet-stream', Authorization: `Bearer ${token}` },
     body: file,
   });

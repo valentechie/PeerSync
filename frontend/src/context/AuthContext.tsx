@@ -8,6 +8,7 @@ export interface User {
   bio: string;
   studyCode: string | null;
   study: string | null;
+  photoUrl: string | null;
   skillsSeeking: string[];
 }
 
@@ -23,6 +24,8 @@ interface AuthContextType {
   login: (username: string) => Promise<void>;
   logout: () => void;
   updateProfile: (changes: ProfileChanges) => Promise<void>;
+  /** Actualiza el usuario con un perfil ya devuelto por el servidor, como al cambiar la foto. */
+  applyProfile: (profile: User) => void;
 }
 
 const TOKEN_KEY = 'peersync_token';
@@ -104,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, isLoading, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, isLoading, login, logout, updateProfile, applyProfile: setUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,6 +4,7 @@ export interface InviteCandidate {
   id: string;
   name: string;
   study: string | null;
+  photoUrl: string | null;
   isFriend: boolean;
   status: 'member' | 'invited' | 'declined' | null;
 }

@@ -18,25 +18,39 @@ Si el usuario no existe, se crea. El token dura 7 días.
 
 ## Salas
 
-El centro de PeerSync: salas abiertas donde estudian personas que no tienen por qué ser expertas. Cualquiera con sesión puede ver las salas, crearlas y unirse. Solo sus participantes leen y envían mensajes. El frontend consulta cada 3 segundos.
+El centro de PeerSync: salas privadas donde estudian personas que no tienen por qué ser expertas. Solo se entra con una invitación o un enlace de invitación, y solo los participantes ven la sala y sus mensajes. El frontend consulta cada 3 segundos.
 
 | Método | Ruta | Respuestas | Límite |
 |---|---|---|---|
-| GET | `/rooms` | `200` lista de salas | 120/min por IP |
-| POST | `/rooms` con `title` (hasta 120) y `objective` (hasta 300) | `201` sala, con su creador dentro · `422` | 20/min por IP |
-| GET | `/rooms/{id}` | `200` sala y participantes · `404` | 600/min por IP |
-| POST | `/rooms/{id}/join` | `200` sala (repetirlo no cambia nada) · `404` | 60/min por IP |
-| POST | `/rooms/{id}/leave` | `204` · `404` | 60/min por IP |
+| GET | `/rooms` | `200` solo las salas en las que estás; las invitaciones llegan por `/invitations` | 120/min por IP |
+| POST | `/rooms` con `title` (hasta 120) y `objective` (hasta 300) | `201` sala, con su creador dentro · `409` feedback pendiente · `422` | 20/min por IP |
+| GET | `/rooms/{id}` | `200` sala y participantes · `403` no estás dentro · `404` · `409` cerrada | 600/min por IP |
+| POST | `/rooms/{id}/join`, opcionalmente con `inviteToken` | `200` sala (repetirlo no cambia nada) · `403` sin invitación ni enlace válido · `404` · `409` cerrada o feedback pendiente | 60/min por IP |
+| GET | `/rooms/{id}/invite-link` | `200` `{"token"}`, firmado y válido 7 días, solo para esa sala · `403` · `404` · `409` | 60/min por IP |
+| POST | `/rooms/{id}/leave` | `200` a quién debes evaluar · `404` · `409` ya cerrada. La última persona en salir cierra la sala | 60/min por IP |
 | GET | `/rooms/{id}/messages` | `200` últimos 100 mensajes · `403` no participa · `404` | 600/min por IP |
 | POST | `/rooms/{id}/messages` con `content` (hasta 2000) | `201` · `403` · `404` · `422` | 120/min por IP |
 | POST | `/rooms/{id}/attachments?fileName=`, con el archivo como cuerpo | `201` mensaje con `attachment` · `403` · `404` · `413` más de 4 MB o sala llena · `415` formato no admitido · `422` vacío | 30/min por IP |
-| POST | `/rooms/{id}/close` | `200` sala cerrada · `403` solo quien la abrió, o cualquiera de dentro si esa persona se fue · `404` | 30/min por IP |
-| POST | `/rooms/{id}/reviews` con `revieweeId`, `clarity`, `listening` y `preparation` (de 1 a 5) y `comment` (20 a 1000) | `201` · `400` a ti · `403` no estuvo · `404` esa persona no estuvo · `409` sala abierta o ya evaluada · `422` | 30/min por IP |
+| POST | `/rooms/{id}/reviews` con `revieweeId`, `punctuality`, `treatment`, `participation` y `clarity` (enteros de 0 a 10) | `201` · `404` no coincidisteis · `409` sigues dentro o ya evaluaste · `422` | 60/min por IP |
 | GET | `/rooms/{id}/attachments/{attachmentId}` | `200` el archivo · `403` · `404` | 600/min por IP |
 
 Archivos: PNG, JPEG, GIF, WebP, MP3, OGG, WAV, M4A, MP4, WebM y PDF, hasta 4 MB cada uno y 100 MB por sala. El tipo se detecta por el contenido, nunca por el nombre. Solo los participantes de la sala pueden subirlos y descargarlos.
 
 Sala: `{"id", "title", "objective", "participantCount", "isMember", "lastActivityAt"}`, más `participants` con `id` y `name`. Nunca incluye emails.
+
+## Invitaciones
+
+Cualquier participante de una sala abierta puede invitar a amigos o a otros usuarios. Invitar no mete a nadie en la sala: la otra persona decide. Una invitación rechazada no se puede repetir en esa sala.
+
+| Método | Ruta | Respuestas | Límite |
+|---|---|---|---|
+| GET | `/rooms/{id}/invite-candidates?search=` (2 a 100 caracteres, opcional) | `200` tus amigos, o usuarios por nombre con tus amigos primero · `403` · `404` · `409` cerrada · `422` | 120/min por IP |
+| POST | `/rooms/{id}/invitations` con `inviteeId` | `201` · `400` a ti · `403` no estás dentro · `404` · `409` ya está dentro, rechazó o sala cerrada · `422` | 60/min por IP |
+| GET | `/invitations` | `200` tus invitaciones pendientes a salas abiertas | 240/min por IP |
+| POST | `/invitations/{id}/accept` | `200` `{"roomId"}` · `404` · `409` sala cerrada o feedback pendiente | 60/min por IP |
+| DELETE | `/invitations/{id}` | `204` rechaza · `404` | 60/min por IP |
+
+Candidato: `{"id", "name", "study", "isFriend", "status"}`, con `status` en `member`, `invited`, `declined` o `null`. Nunca incluye el email.
 
 ## Amigos
 
@@ -49,7 +63,7 @@ Cada pareja tiene una sola relación. Las respuestas nunca incluyen emails.
 | POST | `/friends/{id}/accept` | `200` · `404` sin solicitud de esa persona | 60/min por IP |
 | DELETE | `/friends/{id}` | `204`: rechaza, cancela o elimina | 60/min por IP |
 
-Persona: `{"id", "name", "bio", "sharedInterests", "friendStatus"}`, con `friendStatus` en `friend`, `sent`, `received` o `null`. Cada amigo incluye `rooms`, hasta 3 salas en las que está.
+Persona: `{"id", "name", "bio", "sharedInterests", "friendStatus"}`, con `friendStatus` en `friend`, `sent`, `received` o `null`. Cada amigo incluye `rooms`, hasta 3 salas suyas que tú puedes abrir, porque estás dentro o te han invitado.
 
 ## Personas
 
@@ -79,12 +93,14 @@ Entrenamiento de explicación con Gemini, invocado solo desde el backend. La IA 
 
 ## Evaluación entre pares
 
-Al cerrarse una sala queda en solo lectura para quienes estaban dentro, y cada uno evalúa a los demás una sola vez. `rating` es la media redondeada de los tres criterios, y de él sale la reputación.
+Es obligatoria y no se escribe nada: al salir de una sala, cada persona puntúa de 0 a 10 la puntualidad, el trato, la participación y la claridad de todos los demás participantes, salvo quien entró después de que saliera. Mientras tenga evaluaciones pendientes no puede entrar en ninguna sala ni crear otra. La reputación (0 a 5) sale de la media de esas puntuaciones.
+
+Una sala se cierra cuando sale la última persona. Quien sale deja de ver sus mensajes y archivos, y para volver necesita otra invitación.
 
 | Método | Ruta | Respuestas | Límite |
 |---|---|---|---|
 | GET | `/profiles/me/pending-reviews` | `200` `[{"roomId", "roomTitle", "personId", "personName"}]` | 120/min por IP |
-| GET | `/profiles/me/feedback` | `200` `{"count", "average", "clarity", "listening", "preparation", "items"}` | 120/min por IP |
+| GET | `/profiles/me/feedback?page=` (desde 1) | `200` `{"count", "page", "pageSize", "average", "punctuality", "treatment", "participation", "clarity", "items"}`: 5 evaluaciones por página, medias sobre 10 de todas | 120/min por IP |
 
 Solo cada persona puede ver su propio feedback, con el nombre de quien evaluó.
 
@@ -96,8 +112,11 @@ Solo el perfil del usuario del token: no hay forma de leer o editar el de otro.
 |---|---|---|---|
 | GET | `/profiles/me` | `200` perfil | 120/min por IP |
 | PATCH | `/profiles/me` | `200` perfil · `422` | 30/min por IP |
+| PUT | `/profiles/me/photo`, con la imagen como cuerpo | `200` perfil · `413` más de 1 MB · `415` no es JPEG, PNG ni WebP · `422` vacía | 30/min por IP |
+| DELETE | `/profiles/me/photo` | `200` perfil | 30/min por IP |
+| GET | `/users/{id}/photo`, sin token porque la pide una etiqueta `<img>` | `200` la imagen · `404` | 1200/min por IP |
 
-Perfil: `{"id", "name", "email", "bio", "studyCode", "study", "skillsOffering", "skillsSeeking", "reputation", "completedSessions"}`. `reputation` es `null` hasta la primera valoración.
+Perfil: `{"id", "name", "email", "bio", "studyCode", "study", "photoUrl", "skillsOffering", "skillsSeeking", "reputation", "completedSessions"}`. `reputation` es `null` hasta la primera valoración.
 
 PATCH admite `studyCode` (código del catálogo, `null` lo quita; otro valor da `422`), `name`, `bio` (máx. 1000), `skillsOffering` y `skillsSeeking` (máx. 20 de hasta 100 caracteres). Los campos omitidos no cambian; una lista enviada sustituye a la anterior. `email`, `reputation` y `completedSessions` no son editables.
 

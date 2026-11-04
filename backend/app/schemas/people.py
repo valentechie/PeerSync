@@ -18,6 +18,7 @@ class PersonRead(_Camel):
     name: str
     bio: str
     study: str | None
+    photo_url: str | None
     shared_interests: list[str]
     friend_status: FriendStatus | None
 

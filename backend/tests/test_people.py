@@ -142,15 +142,19 @@ def test_friendship_of_others_is_not_visible(client, person):
     assert overview == {"friends": [], "received": [], "sent": []}
 
 
-def test_only_friends_see_your_rooms(client, person):
+def test_friends_only_see_rooms_they_can_open(client, person):
     ana, ana_id = person("Ana")
     bea, bea_id = person("Bea")
-    client.post("/api/rooms", json={"title": "Sala de Ana"}, headers=ana)
+    room_id = client.post("/api/rooms", json={"title": "Sala de Ana"}, headers=ana).json()["id"]
 
     client.post(f"{FRIENDS}/{ana_id}", headers=bea)
     assert "rooms" not in _overview(client, bea)["sent"][0]
 
     client.post(f"{FRIENDS}/{bea_id}/accept", headers=ana)
+    # Ser amigo no da acceso: la sala es privada hasta que te invitan.
+    assert _overview(client, bea)["friends"][0]["rooms"] == []
+
+    client.post(f"/api/rooms/{room_id}/invitations", json={"inviteeId": bea_id}, headers=ana)
     rooms = _overview(client, bea)["friends"][0]["rooms"]
     assert [room["title"] for room in rooms] == ["Sala de Ana"]
 

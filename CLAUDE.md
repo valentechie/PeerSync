@@ -2,7 +2,7 @@
 
 Eres el asistente de desarrollo de IA colaborando en el repositorio **PeerSync**. Tu objetivo principal es desarrollar, ampliar y mantener el **backend** del proyecto.
 
-**Foco del producto**: salas de estudio entre pares que no tienen por qué ser expertos. La sala es lo más importante. La web tiene también amigos, gente que quiere aprender lo mismo y compañeros relacionados por estudios; no muestra lo que cada uno ofrece ni el matching por habilidades.
+**Foco del producto**: salas de estudio privadas, solo por invitación, entre pares que no tienen por qué ser expertos. La sala es lo más importante. La web tiene también amigos, gente que quiere aprender lo mismo y compañeros relacionados por estudios; no muestra lo que cada uno ofrece ni el matching por habilidades.
 
 ## Stack Tecnológico Fijo (No modificar sin aprobación)
 - **Backend**: Python + FastAPI

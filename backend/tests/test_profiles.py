@@ -144,8 +144,8 @@ def test_reputation_and_sessions_are_calculated_from_real_activity(client, auth_
         pending = StudySession(match_id=match.id, status=SessionStatus.SCHEDULED)
         db.add_all([done, pending])
         db.flush()
-        db.add(SessionReview(session_id=done.id, reviewer_id=bea, reviewee_id=ana, rating=4, clarity=4, listening=4, preparation=4))
-        db.add(SessionReview(session_id=pending.id, reviewer_id=bea, reviewee_id=ana, rating=5, clarity=5, listening=5, preparation=5))
+        db.add(SessionReview(session_id=done.id, reviewer_id=bea, reviewee_id=ana, rating=4, punctuality=4, treatment=4, participation=4, clarity=4))
+        db.add(SessionReview(session_id=pending.id, reviewer_id=bea, reviewee_id=ana, rating=5, punctuality=5, treatment=5, participation=5, clarity=5))
         db.commit()
 
     ana_body = client.get(ME, headers=ana_headers).json()

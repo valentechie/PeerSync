@@ -11,16 +11,17 @@ Supabase publica el esquema `public` en una API REST. **Toda tabla nueva debe ac
 | Tabla | Contenido | Reglas clave |
 |---|---|---|
 | `users` | Cuenta: nombre y usuario (columna `email`) | Usuario único, en minúsculas; en modo demo no siempre es un correo; `supabase_user_id` y `password_hash` sin uso |
-| `profiles` | Biografía y estudio (`study_code`) | Se crea al guardar por primera vez; el catálogo de estudios está en el código |
+| `profiles` | Biografía, estudio (`study_code`) y foto (`photo_data`, `photo_type`, `photo_version`) | Se crea al guardar por primera vez; el catálogo de estudios está en el código |
 | `skills` | Catálogo de habilidades | Nombre único sin distinguir mayúsculas |
 | `user_skills` | Qué quiere aprender (`seeking`) u ofrece (`offering`, sin uso en la web) cada usuario | |
 | `match_requests` | Solicitudes de intercambio | Nunca consigo mismo; una pendiente por dirección; guarda `score` y `score_breakdown` |
 | `study_sessions` | Salas de estudio | Sin `match_id` es una sala abierta, con `title` y `created_by_id` |
 | `friendships` | Amistades y solicitudes | Una fila por pareja, en orden fijo; `status`: `pending` o `accepted` |
-| `session_participants` | Quién está en cada sala abierta | Una fila por usuario y sala |
+| `room_invitations` | Invitaciones a salas | Una por persona y sala; `status`: `pending` o `declined`; se borra al entrar |
+| `session_participants` | Quién está o estuvo en cada sala | Una fila por usuario y sala; `left_at` marca la salida |
 | `messages` | Chat de la sala | |
 | `message_attachments` | Archivos del chat, guardados en la propia base de datos | Uno por mensaje; hasta 4 MB |
-| `session_reviews` | Evaluación entre pares | `rating`, `clarity`, `listening` y `preparation` de 1 a 5; una por sala y pareja |
+| `session_reviews` | Evaluación entre pares | `punctuality`, `treatment`, `participation` y `clarity` de 0 a 10; `rating` de 0 a 5; una por sala y pareja |
 | `studymind_hints` | Pistas pedidas | `level` de 1 a 3; siempre por petición explícita |
 | `teachback_submissions` | Explicaciones del estudiante | |
 | `teachback_peer_reviews` | Revisión del compañero | Una por explicación |

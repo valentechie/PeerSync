@@ -8,10 +8,9 @@ import { EmptyState, ErrorState, LoadingState } from '../components/UIStates';
 import { Avatar } from '../components/Swap';
 import { FriendButton } from '../components/FriendButton';
 
-type Filter = 'all' | 'direct' | 'similar';
+type Filter = 'direct' | 'similar';
 
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'Todos' },
   { value: 'direct', label: 'Mismo estudio' },
   { value: 'similar', label: 'Estudios parecidos' },
 ];
@@ -20,7 +19,7 @@ export const Classmates: React.FC = () => {
   const { token, user } = useAuth();
   const navigate = useNavigate();
   const [matches, setMatches] = useState<StudyMatch[] | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>('direct');
   const [error, setError] = useState('');
 
   const load = useCallback(() => {
@@ -29,13 +28,16 @@ export const Classmates: React.FC = () => {
       .then(data => {
         setMatches(data);
         setError('');
+        // Si nadie estudia lo mismo, se empieza por los parecidos en lugar de por una lista vacía.
+        if (!data.some(match => match.matchType === 'direct') && data.length > 0) setFilter('similar');
       })
       .catch((err: unknown) => setError(errorMessage(err)));
   }, [token]);
 
   useEffect(load, [load]);
 
-  const visible = matches?.filter(match => filter === 'all' || match.matchType === filter) ?? [];
+  const visible = matches?.filter(match => match.matchType === filter) ?? [];
+  const countOf = (value: Filter) => matches?.filter(match => match.matchType === value).length ?? 0;
 
   return (
     <div className="page max-w-5xl space-y-6">
@@ -72,7 +74,7 @@ export const Classmates: React.FC = () => {
                 aria-pressed={filter === option.value}
                 className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors ${filter === option.value ? 'nav-active' : 'text-muted hover:text-ink'}`}
               >
-                {option.label}
+                {option.label}{matches ? ` (${countOf(option.value)})` : ''}
               </button>
             ))}
           </div>
@@ -92,7 +94,7 @@ export const Classmates: React.FC = () => {
                 <article key={match.id} className="card p-5 space-y-3 min-w-0">
                   <div className="flex items-center justify-between gap-3 min-w-0">
                     <span className="flex items-center gap-3 min-w-0">
-                      <Avatar name={match.name} tone={match.matchType === 'direct' ? 'teach' : 'learn'} className="w-12 h-12 text-xl" />
+                      <Avatar name={match.name} photoUrl={match.photoUrl} tone={match.matchType === 'direct' ? 'teach' : 'learn'} className="w-12 h-12 text-xl" />
                       <h2 className="text-lg text-ink truncate">{match.name}</h2>
                     </span>
                     <FriendButton

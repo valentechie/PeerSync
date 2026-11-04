@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, GraduationCap, MessagesSquare, Mic, Users, User, LogOut } from 'lucide-react';
 import { fetchInvitations } from '../services/invitations';
-import { SwapMark } from './Swap';
+import { Avatar, SwapMark } from './Swap';
 
 const INVITATION_POLL_MS = 15000;
 
@@ -79,7 +79,10 @@ export const Navbar: React.FC = () => {
           {/* User Profile & Settings */}
           <div className="flex items-center gap-1 min-w-0">
             {user && (
-              <span className="hidden sm:block mr-2 text-sm font-bold text-ink truncate max-w-36">{user.name}</span>
+              <button onClick={() => navigate('/my-profile')} className="flex items-center gap-2 mr-2 min-w-0 cursor-pointer rounded-lg" aria-label="Ir a mi perfil">
+                <Avatar name={user.name} photoUrl={user.photoUrl} className="w-8 h-8 text-sm" />
+                <span className="hidden sm:block text-sm font-bold text-ink truncate max-w-36">{user.name}</span>
+              </button>
             )}
             <button
               onClick={() => { logout(); navigate('/login'); }}

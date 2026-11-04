@@ -61,7 +61,7 @@ export const Rooms: React.FC = () => {
             ¡Hola, {user?.name || 'Estudiante'}! 👋
           </h1>
           <p className="text-lg text-indigo-100 leading-relaxed">
-            No hace falta ser experto para aprender con alguien. Entra en una sala, comparte lo que entiendes y resuelve en grupo lo que no.
+            No hace falta ser experto para aprender con alguien. Abre una sala, invita a tus compañeros, comparte lo que entiendes y resuelve en grupo lo que no.
           </p>
         </div>
       </section>
@@ -71,7 +71,7 @@ export const Rooms: React.FC = () => {
       <div className="grid lg:grid-cols-3 gap-6 items-start">
         <section className="card p-6 sm:p-8" aria-labelledby="create-room">
           <h2 id="create-room" className="text-2xl text-ink">Abre una sala</h2>
-          <p className="text-sm text-muted mt-1 mb-5">¿Qué quieres estudiar hoy? Otros podrán unirse.</p>
+          <p className="text-sm text-muted mt-1 mb-5">¿Qué quieres estudiar hoy? Después invita a quien quieras: solo entra quien tenga invitación.</p>
           {createError && <div className="mb-4"><ErrorState message={createError} /></div>}
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
@@ -106,11 +106,11 @@ export const Rooms: React.FC = () => {
         </section>
 
         <section className="lg:col-span-2 space-y-4" aria-labelledby="open-rooms">
-          <h2 id="open-rooms" className="text-2xl text-ink">Salas abiertas</h2>
+          <h2 id="open-rooms" className="text-2xl text-ink">Mis salas</h2>
           {loading && <LoadingState message="Cargando salas..." />}
           {!loading && loadError && <ErrorState message={loadError} onRetry={retry} />}
           {!loading && !loadError && rooms.length === 0 && (
-            <EmptyState title="Aún no hay salas" description="Abre la primera y comparte el enlace con tus compañeros." />
+            <EmptyState title="Aún no estás en ninguna sala" description="Abre una e invita a tus compañeros, o acepta una invitación." />
           )}
           {!loading && !loadError && (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -126,7 +126,7 @@ export const Rooms: React.FC = () => {
                       <span>{room.participantCount} {room.participantCount === 1 ? 'persona' : 'personas'}</span>
                     </span>
                     <button onClick={() => navigate(`/rooms/${room.id}`)} className="btn btn-primary py-2!">
-                      <span>{room.isMember ? 'Volver' : 'Entrar'}</span>
+                      <span>Entrar</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>

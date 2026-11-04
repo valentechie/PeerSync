@@ -38,6 +38,7 @@ class ProfileRead(BaseModel):
     bio: str
     study_code: str | None
     study: str | None
+    photo_url: str | None
     skills_offering: list[str]
     skills_seeking: list[str]
     # None hasta recibir la primera valoración de un compañero.

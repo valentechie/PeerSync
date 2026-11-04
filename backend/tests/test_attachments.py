@@ -4,6 +4,7 @@ import pytest
 
 from app.services import attachment_service
 from app.services.attachment_service import MAX_FILE_BYTES, clean_file_name, detect_content_type
+from conftest import join_room
 
 ROOMS = "/api/rooms"
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -79,7 +80,7 @@ def test_routes_require_a_token(client):
 
 
 def test_upload_appears_in_the_chat_and_can_be_downloaded(client, ana, bea, room_id):
-    client.post(f"{ROOMS}/{room_id}/join", headers=bea)
+    join_room(client, room_id, bea)
 
     response = _upload(client, ana, room_id)
 

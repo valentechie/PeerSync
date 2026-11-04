@@ -112,7 +112,7 @@ export const Learn: React.FC = () => {
               <article key={person.id} className="card p-5 space-y-3 min-w-0">
                 <div className="flex items-center justify-between gap-3 min-w-0">
                   <span className="flex items-center gap-3 min-w-0">
-                    <Avatar name={person.name} tone="learn" className="w-12 h-12 text-xl" />
+                    <Avatar name={person.name} photoUrl={person.photoUrl} tone="learn" className="w-12 h-12 text-xl" />
                     <h3 className="text-lg text-ink truncate">{person.name}</h3>
                   </span>
                   <FriendButton

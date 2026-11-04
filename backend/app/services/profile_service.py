@@ -13,6 +13,7 @@ from app.models.session import SessionParticipant, SessionReview, SessionStatus,
 from app.models.skill import Skill, SkillKind, UserSkill
 from app.models.user import User
 from app.schemas.profile import ProfileRead, ProfileUpdate
+from app.services.photo_service import photo_urls
 
 
 def skills_by_user(db: Session, user_ids: Collection[UUID]) -> dict[tuple[UUID, SkillKind], list[str]]:
@@ -72,6 +73,7 @@ def get_profile(db: Session, user: User) -> ProfileRead:
         bio=profile.bio if profile else "",
         study_code=profile.study_code if profile else None,
         study=study_label(profile.study_code) if profile else None,
+        photo_url=photo_urls(db, [user.id]).get(user.id),
         skills_offering=skills.get((user.id, SkillKind.OFFERING), []),
         skills_seeking=skills.get((user.id, SkillKind.SEEKING), []),
         reputation=reputation_by_user(db, [user.id]).get(user.id),

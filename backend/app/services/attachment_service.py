@@ -8,6 +8,7 @@ from app.models.message import Message, MessageAttachment
 from app.models.user import User
 from app.schemas.room import AttachmentRead, MessageRead
 from app.services import room_service
+from app.services.photo_service import photo_urls
 
 # Vercel rechaza peticiones y respuestas de más de 4,5 MB.
 MAX_FILE_BYTES = 4 * 1024 * 1024
@@ -102,6 +103,7 @@ def add_attachment(db: Session, user: User, room_id: UUID, file_name: str, data:
             content_type=content_type,
             size=attachment.size,
         ),
+        photo_urls(db, [user.id]).get(user.id),
     )
 
 

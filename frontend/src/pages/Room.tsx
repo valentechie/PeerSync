@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Check, Flag, Lightbulb, Link2, LogOut, MessageSquareQuote, Paperclip, Send, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { errorMessage } from '../services/api';
+import { ApiError, errorMessage } from '../services/api';
 import { fetchFriends, type FriendStatus } from '../services/people';
-import { fetchMessages, fetchRoom, joinRoom, leaveRoom, sendMessage, uploadAttachment, type RoomDetail, type RoomMessage } from '../services/rooms';
+import { fetchInviteLink, fetchMessages, fetchRoom, joinRoom, leaveRoom, sendMessage, uploadAttachment, type RoomDetail, type RoomMessage } from '../services/rooms';
 import { ErrorState, LoadingState } from '../components/UIStates';
 import { Avatar } from '../components/Swap';
 import { FriendButton } from '../components/FriendButton';
@@ -22,9 +22,13 @@ export const Room: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { token, user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const inviteToken = useRef(searchParams.get('invite'));
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [room, setRoom] = useState<RoomDetail | null>(null);
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [loadError, setLoadError] = useState('');
+  const [canRetryLoad, setCanRetryLoad] = useState(true);
   const [connectionLost, setConnectionLost] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [draft, setDraft] = useState('');
@@ -59,22 +63,27 @@ export const Room: React.FC = () => {
       }
     };
 
-    joinRoom(token, id)
+    joinRoom(token, id, inviteToken.current)
       .then(joined => {
         if (cancelled) return;
         setRoom(joined);
+        // Ya dentro, el enlace sobra: se quita de la barra para no compartirlo sin querer.
+        if (inviteToken.current) navigate(`/rooms/${id}`, { replace: true });
         void refresh();
         timer = setInterval(refresh, POLL_INTERVAL_MS);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setLoadError(errorMessage(err));
+        if (cancelled) return;
+        setLoadError(errorMessage(err));
+        // Sin invitación, reintentar no cambia nada.
+        setCanRetryLoad(!(err instanceof ApiError && [403, 404, 409].includes(err.status)));
       });
 
     return () => {
       cancelled = true;
       if (timer) clearInterval(timer);
     };
-  }, [token, id, attempt]);
+  }, [token, id, attempt, navigate]);
 
   // Si esto falla, la sala sigue funcionando: solo no se sabrá quién es amigo.
   useEffect(() => {
@@ -85,6 +94,15 @@ export const Room: React.FC = () => {
       })
       .catch(() => undefined);
   }, [token]);
+
+  const roomId = room?.id;
+  const roomIsClosed = room?.isClosed;
+  useEffect(() => {
+    if (!token || !roomId || roomIsClosed) return;
+    fetchInviteLink(token, roomId)
+      .then(link => setInviteUrl(`${window.location.origin}/rooms/${roomId}?invite=${encodeURIComponent(link.token)}`))
+      .catch(() => undefined);
+  }, [token, roomId, roomIsClosed]);
 
   useEffect(() => {
     const chat = chatRef.current;
@@ -149,12 +167,16 @@ export const Room: React.FC = () => {
   };
 
   const handleCopyLink = async () => {
+    if (!inviteUrl) {
+      setSendError('El enlace aún no está listo. Inténtalo de nuevo en un momento.');
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(inviteUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setSendError('No se pudo copiar el enlace. Cópialo desde la barra del navegador.');
+      setSendError('No se pudo copiar el enlace. Prueba a invitar a la persona desde "Invitar personas".');
     }
   };
 
@@ -174,10 +196,14 @@ export const Room: React.FC = () => {
         {backButton}
         <ErrorState
           message={loadError}
-          onRetry={() => {
-            setLoadError('');
-            setAttempt(current => current + 1);
-          }}
+          onRetry={
+            canRetryLoad
+              ? () => {
+                  setLoadError('');
+                  setAttempt(current => current + 1);
+                }
+              : undefined
+          }
         />
       </div>
     );
@@ -221,7 +247,7 @@ export const Room: React.FC = () => {
               const youTubeId = findYouTubeId(message.content);
               return (
                 <div key={message.id} className={`flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
-                  <Avatar name={message.senderName} tone={mine ? 'teach' : 'learn'} className="w-8 h-8 text-sm" />
+                  <Avatar name={message.senderName} photoUrl={message.senderPhotoUrl} tone={mine ? 'teach' : 'learn'} className="w-8 h-8 text-sm" />
                   <div className={`max-w-[80%] min-w-0 space-y-1 ${mine ? 'text-right' : ''}`}>
                     <p className="text-xs">
                       <span className="font-bold">{mine ? 'Tú' : message.senderName}</span>{' '}
@@ -279,7 +305,7 @@ export const Room: React.FC = () => {
             <ul className="space-y-2">
               {room.participants.map(participant => (
                 <li key={participant.id} className="flex items-center gap-2.5 min-w-0">
-                  <Avatar name={participant.name} className="w-8 h-8 text-sm" />
+                  <Avatar name={participant.name} photoUrl={participant.photoUrl} className="w-8 h-8 text-sm" />
                   <span className="text-sm font-semibold truncate flex-1 min-w-0">
                     {participant.name}{participant.id === user?.id && <span className="text-muted font-normal"> (tú)</span>}
                   </span>
@@ -315,7 +341,7 @@ export const Room: React.FC = () => {
                     <p className="text-sm font-bold text-learn-strong">
                       {othersInRoom === 0
                         ? 'Eres la última persona: la sala se cerrará y ya nadie podrá ver sus mensajes ni archivos.'
-                        : 'Dejarás de ver sus mensajes y archivos, y tendrás que evaluar a tus compañeros para poder entrar en otra sala.'}
+                        : `Dejarás de ver sus mensajes y archivos, y para volver necesitarás otra invitación. Tendrás que evaluar a ${othersInRoom === 1 ? 'la otra persona' : `las ${othersInRoom} personas`} de la sala.`}
                     </p>
                     <div className="flex gap-2">
                       <button onClick={handleLeave} disabled={leaving} className="btn btn-primary flex-1">

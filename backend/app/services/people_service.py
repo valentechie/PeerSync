@@ -11,6 +11,7 @@ from app.models.profile import Profile
 from app.models.skill import Skill, SkillKind, UserSkill
 from app.models.user import User
 from app.schemas.people import FriendStatus, PersonRead, StudyMatchRead
+from app.services.photo_service import photo_urls
 
 MAX_SEARCH_RESULTS = 20
 MAX_SAME_INTEREST_RESULTS = 50
@@ -46,12 +47,14 @@ def to_people(db: Session, user: User, others: list[User]) -> list[PersonRead]:
     }
     statuses = friend_statuses(db, user, set(ids))
     shared = _shared_interests(db, user, ids)
+    photos = photo_urls(db, ids)
     return [
         PersonRead(
             id=other.id,
             name=other.name,
             bio=profiles.get(other.id, ("", None))[0],
             study=study_label(profiles.get(other.id, ("", None))[1]),
+            photo_url=photos.get(other.id),
             shared_interests=shared.get(other.id, []),
             friend_status=statuses.get(other.id),
         )

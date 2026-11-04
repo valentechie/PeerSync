@@ -15,6 +15,8 @@ from app.core.database import get_db
 from app.models.user import User
 
 JWT_ALGORITHM = "HS256"
+ROOM_INVITE_PURPOSE = "room-invite"
+ROOM_INVITE_DAYS = 7
 
 
 def client_ip(request: Request) -> str:
@@ -40,6 +42,32 @@ def create_access_token(user_id: UUID) -> str:
         "exp": now + timedelta(minutes=settings.access_token_expire_minutes),
     }
     return jwt.encode(claims, settings.jwt_secret, algorithm=JWT_ALGORITHM)
+
+
+def create_room_invite_token(room_id: UUID) -> str:
+    """Enlace de invitación a una sala. Sin `sub`, así que nunca sirve como sesión."""
+    settings = get_settings()
+    claims = {
+        "purpose": ROOM_INVITE_PURPOSE,
+        "room": str(room_id),
+        "exp": datetime.now(timezone.utc) + timedelta(days=ROOM_INVITE_DAYS),
+    }
+    return jwt.encode(claims, settings.jwt_secret, algorithm=JWT_ALGORITHM)
+
+
+def is_valid_room_invite(token: str | None, room_id: UUID) -> bool:
+    if not token:
+        return False
+    try:
+        claims = jwt.decode(
+            token,
+            get_settings().jwt_secret,
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["exp", "purpose", "room"]},
+        )
+    except jwt.InvalidTokenError:
+        return False
+    return claims["purpose"] == ROOM_INVITE_PURPOSE and claims["room"] == str(room_id)
 
 
 _bearer = HTTPBearer(auto_error=False)

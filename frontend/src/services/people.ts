@@ -1,4 +1,5 @@
-import { apiRequest } from './api';
+import { apiRequest, apiUpload } from './api';
+import type { User } from '../context/AuthContext';
 
 export type FriendStatus = 'friend' | 'sent' | 'received' | null;
 
@@ -7,6 +8,7 @@ export interface Person {
   name: string;
   bio: string;
   study: string | null;
+  photoUrl: string | null;
   sharedInterests: string[];
   friendStatus: FriendStatus;
 }
@@ -50,3 +52,7 @@ export const fetchSameInterests = (token: string) => apiRequest<Person[]>('/peop
 export const fetchStudyMatches = (token: string) => apiRequest<StudyMatch[]>('/people/study-matches', { token });
 
 export const fetchStudies = (token: string) => apiRequest<StudyFamily[]>('/studies', { token });
+
+export const uploadMyPhoto = (token: string, photo: File) => apiUpload<User>('/profiles/me/photo', photo, token, 'PUT');
+
+export const removeMyPhoto = (token: string) => apiRequest<User>('/profiles/me/photo', { method: 'DELETE', token });

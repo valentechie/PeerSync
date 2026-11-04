@@ -110,7 +110,7 @@ export const InviteDialog: React.FC<{ roomId: string; onClose: () => void }> = (
             {candidates.map(person => (
               <li key={person.id} className="flex items-center justify-between gap-3 py-3 min-w-0">
                 <span className="flex items-center gap-3 min-w-0">
-                  <Avatar name={person.name} tone={person.isFriend ? 'teach' : 'learn'} className="w-10 h-10 text-base" />
+                  <Avatar name={person.name} photoUrl={person.photoUrl} tone={person.isFriend ? 'teach' : 'learn'} className="w-10 h-10 text-base" />
                   <span className="min-w-0">
                     <span className="block font-bold truncate">
                       {person.name}

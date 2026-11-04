@@ -21,17 +21,21 @@ export interface PendingReview {
   roomTitle: string;
   personId: string;
   personName: string;
+  personPhotoUrl: string | null;
 }
 
 export interface FeedbackItem extends ReviewScores {
   id: string;
   reviewerName: string;
+  reviewerPhotoUrl: string | null;
   roomTitle: string;
   createdAt: string;
 }
 
 export interface FeedbackSummary {
   count: number;
+  page: number;
+  pageSize: number;
   average: number | null;
   punctuality: number | null;
   treatment: number | null;
@@ -47,6 +51,7 @@ export const submitReview = (token: string, roomId: string, revieweeId: string, 
     token,
   });
 
-export const fetchFeedback = (token: string) => apiRequest<FeedbackSummary>('/profiles/me/feedback', { token });
+export const fetchFeedback = (token: string, page = 1) =>
+  apiRequest<FeedbackSummary>(`/profiles/me/feedback?page=${page}`, { token });
 
 export const fetchPendingReviews = (token: string) => apiRequest<PendingReview[]>('/profiles/me/pending-reviews', { token });

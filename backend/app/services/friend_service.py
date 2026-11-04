@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.friendship import Friendship, FriendshipStatus
+from app.models.invitation import InvitationStatus, RoomInvitation
 from app.models.session import SessionParticipant, SessionStatus, StudySession
 from app.models.user import User
 from app.schemas.people import FriendRead, FriendRoom, FriendsOverview, PersonRead
@@ -35,7 +36,7 @@ def get_overview(db: Session, user: User) -> FriendsOverview:
     people = people_service.to_people(db, user, list(users))
 
     friends = [person for person in people if person.friend_status == "friend"]
-    rooms = _rooms_of(db, [person.id for person in friends])
+    rooms = _rooms_of(db, user, [person.id for person in friends])
     return FriendsOverview(
         friends=[FriendRead(**person.model_dump(), rooms=rooms.get(person.id, [])) for person in friends],
         received=[person for person in people if person.friend_status == "received"],
@@ -98,16 +99,25 @@ def _other(friendship: Friendship, user_id: UUID) -> UUID:
     return friendship.user_b_id if friendship.user_a_id == user_id else friendship.user_a_id
 
 
-def _rooms_of(db: Session, friend_ids: list[UUID]) -> dict[UUID, list[FriendRoom]]:
+def _rooms_of(db: Session, user: User, friend_ids: list[UUID]) -> dict[UUID, list[FriendRoom]]:
+    """Las salas de cada amigo que puedes abrir: en las que estás o a las que te invitaron."""
     if not friend_ids:
         return {}
+    mine = select(SessionParticipant.session_id).where(
+        SessionParticipant.user_id == user.id, SessionParticipant.left_at.is_(None)
+    )
+    invited = select(RoomInvitation.session_id).where(
+        RoomInvitation.invitee_id == user.id, RoomInvitation.status == InvitationStatus.PENDING
+    )
     rows = db.execute(
         select(SessionParticipant.user_id, StudySession.id, StudySession.title)
         .join(StudySession, SessionParticipant.session_id == StudySession.id)
         .where(
             SessionParticipant.user_id.in_(friend_ids),
+            SessionParticipant.left_at.is_(None),
             StudySession.match_id.is_(None),
             StudySession.status == SessionStatus.ACTIVE,
+            or_(StudySession.id.in_(mine), StudySession.id.in_(invited)),
         )
         .order_by(StudySession.created_at.desc())
     )
