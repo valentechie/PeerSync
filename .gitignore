@@ -1,0 +1,18 @@
+# .gitignore mínimo
+.env
+.env.*
+!.env.example
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+dist/
+build/
+# backend/.env.example — sin valores reales
+DATABASE_URL=
+GEMINI_API_KEY=
+JWT_SECRET=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+# frontend/.env.example
+VITE_API_BASE_URL=http://localhost:8000/api
