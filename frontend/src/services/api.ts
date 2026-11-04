@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
+// En producción la API comparte dominio con el frontend.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '/api' : 'http://localhost:8000/api');
 
 export class ApiError extends Error {
   readonly status: number;
@@ -11,18 +12,11 @@ export class ApiError extends Error {
 
 interface ValidationIssue {
   loc: (string | number)[];
-  type: string;
 }
 
 const validationMessage = (issues: ValidationIssue[]): string => {
-  const { loc, type } = issues[0];
+  const { loc } = issues[0];
   const field = loc[loc.length - 1];
-  if (field === 'password') {
-    return type === 'string_too_short'
-      ? 'La contraseña debe tener al menos 8 caracteres.'
-      : 'La contraseña es demasiado larga.';
-  }
-  if (field === 'email') return 'El correo electrónico no es válido.';
   if (field === 'name') return 'Revisa el nombre: no puede estar vacío ni superar los 100 caracteres.';
   if (field === 'bio') return 'La biografía no puede superar los 1000 caracteres.';
   return 'Revisa los datos introducidos.';

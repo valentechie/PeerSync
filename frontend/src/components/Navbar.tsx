@@ -23,7 +23,7 @@ export const Navbar: React.FC = () => {
           {/* Logo */}
           <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2.5 cursor-pointer rounded-lg shrink-0">
             <SwapMark />
-            <span className="font-display text-xl font-semibold text-ink">Swap4Edu</span>
+            <span className="font-display text-xl font-semibold text-ink">PeerSync</span>
           </button>
 
           {/* Navigation Links */}

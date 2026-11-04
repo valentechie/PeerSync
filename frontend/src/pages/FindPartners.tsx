@@ -130,7 +130,7 @@ export const FindPartners: React.FC = () => {
                     <h2 className="text-xl text-ink break-words">{partner.name}</h2>
                     <p className="text-sm text-muted flex items-center gap-1 mt-0.5">
                       <Star className="w-3.5 h-3.5 fill-sun text-sun" />
-                      <span>{partner.reputation === null ? 'Nuevo en Swap4Edu' : `${partner.reputation.toFixed(1)} de reputación`}</span>
+                      <span>{partner.reputation === null ? 'Nuevo en PeerSync' : `${partner.reputation.toFixed(1)} de reputación`}</span>
                     </p>
                   </div>
                   <div className="text-right shrink-0">

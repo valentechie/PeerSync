@@ -21,13 +21,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   /** true mientras se recupera la sesión guardada al abrir la app. */
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
-  register: (name: string, email: string, pass: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => void;
   updateProfile: (changes: ProfileChanges) => Promise<void>;
 }
 
-const TOKEN_KEY = 'swap4edu_token';
+const TOKEN_KEY = 'peersync_token';
 const PROFILE_PATH = '/profiles/me';
 
 const readToken = (): string | null => {
@@ -81,18 +80,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [logout]);
 
-  const startSession = async (path: string, body: object) => {
-    const { access_token: newToken } = await apiRequest<{ access_token: string }>(path, { method: 'POST', body });
+  const loginWithGoogle = async (credential: string) => {
+    const { access_token: newToken } = await apiRequest<{ access_token: string }>('/auth/google', {
+      method: 'POST',
+      body: { credential },
+    });
     const profile = await apiRequest<User>(PROFILE_PATH, { token: newToken });
     writeToken(newToken);
     setToken(newToken);
     setUser(profile);
   };
-
-  const login = (email: string, pass: string) => startSession('/auth/login', { email, password: pass });
-
-  const register = (name: string, email: string, pass: string) =>
-    startSession('/auth/register', { name, email, password: pass });
 
   const updateProfile = async (changes: ProfileChanges) => {
     try {
@@ -105,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, isLoading, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, isLoading, loginWithGoogle, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

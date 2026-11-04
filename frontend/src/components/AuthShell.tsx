@@ -10,16 +10,15 @@ const STEPS = [
 export const AuthShell: React.FC<{
   title: string;
   subtitle: string;
-  footer: React.ReactNode;
   children: React.ReactNode;
-}> = ({ title, subtitle, footer, children }) => (
+}> = ({ title, subtitle, children }) => (
   <div className="min-h-screen grid lg:grid-cols-2">
     <aside className="hidden lg:flex flex-col justify-between bg-teach-strong text-white p-12 xl:p-16">
       <div className="flex items-center gap-3">
         <span className="bg-surface rounded-xl p-1.5">
           <SwapMark className="w-8 h-8" />
         </span>
-        <span className="font-display text-2xl font-semibold">Swap4Edu</span>
+        <span className="font-display text-2xl font-semibold">PeerSync</span>
       </div>
 
       <div className="space-y-8 max-w-lg">
@@ -44,13 +43,12 @@ export const AuthShell: React.FC<{
         <div className="space-y-2">
           <div className="flex items-center gap-2 lg:hidden mb-6">
             <SwapMark className="w-8 h-8" />
-            <span className="font-display text-xl font-semibold">Swap4Edu</span>
+            <span className="font-display text-xl font-semibold">PeerSync</span>
           </div>
           <h1 className="page-title">{title}</h1>
           <p className="text-muted">{subtitle}</p>
         </div>
         {children}
-        <p className="text-sm text-muted">{footer}</p>
       </div>
     </main>
   </div>
