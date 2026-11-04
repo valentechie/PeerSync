@@ -251,5 +251,17 @@ ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 
 UPDATE alembic_version SET version_num='0004' WHERE alembic_version.version_num = '0003';
 
+-- Running upgrade 0004 -> 0005
+
+ALTER TABLE users ADD COLUMN supabase_user_id UUID;
+
+CREATE UNIQUE INDEX ix_users_supabase_user_id ON users (supabase_user_id);
+
+DROP INDEX ix_users_google_sub;
+
+ALTER TABLE users DROP COLUMN google_sub;
+
+UPDATE alembic_version SET version_num='0005' WHERE alembic_version.version_num = '0004';
+
 COMMIT;
 

@@ -1,26 +1,21 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
-    # hide_input_in_errors: un JWT_SECRET inválido no debe acabar en los logs de arranque.
+    # hide_input_in_errors: una DATABASE_URL inválida no debe acabar en los logs de arranque.
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env", extra="ignore", hide_input_in_errors=True
     )
 
     database_url: str
-    jwt_secret: str = Field(min_length=32)
-    # Público: el frontend lo envía a cada navegador.
-    google_client_id: str = Field(
-        default="21011797432-8v3d5epni7iolvf79r85q4298hg0gbmo.apps.googleusercontent.com",
-        min_length=1,
-    )
-    access_token_expire_minutes: int = Field(default=60, gt=0)
+    # Público: el frontend también lo usa, junto con la clave publicable.
+    supabase_url: str = "https://pfsswyaxrczroswnapsl.supabase.co"
     cors_origins: str = "http://localhost:5173"
 
     @field_validator("database_url")
@@ -31,6 +26,11 @@ class Settings(BaseSettings):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url.removeprefix(prefix)
         return url
+
+    @field_validator("supabase_url")
+    @classmethod
+    def strip_trailing_slash(cls, url: str) -> str:
+        return url.rstrip("/")
 
     @property
     def cors_origin_list(self) -> list[str]:

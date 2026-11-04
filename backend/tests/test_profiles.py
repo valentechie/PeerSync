@@ -5,7 +5,6 @@ import jwt
 import pytest
 
 from app.core.database import get_db
-from app.core.security import create_access_token
 from app.main import app
 from app.models.match import MatchRequest
 from app.models.session import SessionReview, SessionStatus, StudySession
@@ -50,6 +49,7 @@ def test_token_without_expiry_is_rejected(client):
 
 def test_token_of_inactive_user_is_rejected(client, auth_headers):
     headers = auth_headers()
+    assert client.get(ME, headers=headers).status_code == 200
     with _db() as db:
         db.query(User).update({User.is_active: False})
         db.commit()
@@ -155,11 +155,3 @@ def test_reputation_and_sessions_are_calculated_from_real_activity(client, auth_
     assert ana_body["completedSessions"] == 1
     assert bea_body["reputation"] is None
     assert bea_body["completedSessions"] == 1
-
-def test_issued_token_opens_the_profile(client, auth_headers):
-    headers = auth_headers()
-    user_id = client.get(ME, headers=headers).json()["id"]
-
-    fresh = {"Authorization": f"Bearer {create_access_token(UUID(user_id))}"}
-
-    assert client.get(ME, headers=fresh).status_code == 200

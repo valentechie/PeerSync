@@ -12,7 +12,7 @@
       "src": "backend/index.py",
       "use": "@vercel/python",
       "config": {
-        "excludeFiles": "{.claude/**,CLAUDE.md,GEMINI.md,README.md,database/**,docs/**,infra/**,frontend/**,backend/.env,backend/.env.*,backend/.venv/**,backend/node_modules/**,backend/tests/**,backend/alembic/**,backend/.agents/**,backend/.claude/**,backend/.pytest_cache/**,backend/alembic.ini,backend/pytest.ini,backend/package.json,backend/package-lock.json,backend/skills-lock.json,backend/requirements-dev.txt,package.json,package-lock.json,.env.example,.vercelignore,vercel.json}"
+        "excludeFiles": "{.claude/**,CLAUDE.md,GEMINI.md,README.md,database/**,docs/**,frontend/**,backend/.env,backend/.env.*,backend/.venv/**,backend/node_modules/**,backend/tests/**,backend/alembic/**,backend/.agents/**,backend/.claude/**,backend/.pytest_cache/**,backend/alembic.ini,backend/pytest.ini,backend/skills-lock.json,backend/requirements-dev.txt,package.json,package-lock.json,.vercelignore,vercel.json}"
       }
     }
   ],

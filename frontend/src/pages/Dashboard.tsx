@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowRight, ArrowLeftRight, BookOpen, Clock, Lightbulb, MessageSquareQuote, Star } from 'lucide-react';
-import { Avatar, SkillList, SwapTopic } from '../components/Swap';
+import { ArrowRight, ArrowLeftRight, BookOpen, Lightbulb, MessageSquareQuote, Star } from 'lucide-react';
+import { SkillList } from '../components/Swap';
+import { EmptyState } from '../components/UIStates';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -50,33 +51,10 @@ export const Dashboard: React.FC = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Next session */}
-          <section className="card p-6 sm:p-8 space-y-5">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-2xl text-ink flex items-center gap-2">
-                <span>Tu próxima sesión</span>
-                <span className="chip chip-demo font-sans">Demo</span>
-              </h2>
-              <button onClick={() => navigate('/my-sessions')} className="text-sm font-bold text-teach underline underline-offset-2 hover:text-teach-strong cursor-pointer shrink-0">
-                Ver todas
-              </button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 border-t border-line pt-5">
-              <div className="flex items-start gap-4">
-                <Avatar name="María González" tone="learn" />
-                <div className="space-y-1">
-                  <p className="font-bold text-lg"><SwapTopic topic="React Avanzado ⇄ Machine Learning" /></p>
-                  <p className="text-sm text-muted flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 shrink-0" />
-                    <span>Hoy a las 18:00 hrs con María González</span>
-                  </p>
-                </div>
-              </div>
-              <button onClick={() => navigate('/study-room/session-1')} className="btn btn-primary shrink-0">
-                Entrar a la sala
-              </button>
-            </div>
-          </section>
+          <EmptyState
+            title="Aún no tienes sesiones"
+            description="Las sesiones de estudio todavía no están disponibles. Mientras tanto, ya puedes buscar compañeros y enviarles solicitudes."
+          />
 
           {/* Quick stats */}
           <div className="grid sm:grid-cols-2 gap-6">
@@ -102,7 +80,10 @@ export const Dashboard: React.FC = () => {
         {/* AI support */}
         <section className="card p-6 sm:p-8 space-y-5">
           <div>
-            <h2 className="text-2xl text-ink">Apoyo cuando lo pidas</h2>
+            <h2 className="text-2xl text-ink flex items-center gap-2">
+              <span>Apoyo cuando lo pidas</span>
+              <span className="chip chip-demo font-sans">Próximamente</span>
+            </h2>
             <p className="text-sm text-muted mt-1">Tu compañero va primero. La IA ayuda solo si la necesitas.</p>
           </div>
           <div className="flex gap-3 border-t border-line pt-5">

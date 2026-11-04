@@ -1,254 +1,217 @@
-import json
-from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
+from uuid import uuid4
 
 import jwt
 import pytest
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import NameOID
-from google.auth import crypt, exceptions
-from google.auth import jwt as google_jwt
+from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy.exc import OperationalError
+from starlette.requests import Request
 
-from app.core.config import get_settings
+from app.core import security
 from app.core.database import get_db
 from app.main import app
 from app.models.user import User
 from app.services import auth_service
+from conftest import make_token
 
-GOOGLE = "/api/auth/google"
-KEY_ID = "test-key"
-
-
-def _generate_key():
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test")])
-    now = datetime.now(timezone.utc)
-    certificate = (
-        x509.CertificateBuilder()
-        .subject_name(name)
-        .issuer_name(name)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(now - timedelta(days=1))
-        .not_valid_after(now + timedelta(days=1))
-        .sign(key, hashes.SHA256())
-    )
-    private_pem = key.private_bytes(
-        serialization.Encoding.PEM,
-        serialization.PrivateFormat.PKCS8,
-        serialization.NoEncryption(),
-    ).decode()
-    return private_pem, certificate.public_bytes(serialization.Encoding.PEM).decode()
+ME = "/api/profiles/me"
 
 
-PRIVATE_PEM, CERTIFICATE_PEM = _generate_key()
-OTHER_PRIVATE_PEM, _ = _generate_key()
+def _me(client, token):
+    return client.get(ME, headers={"Authorization": f"Bearer {token}"})
 
 
-def _token(private_pem=PRIVATE_PEM, **overrides):
-    now = int(datetime.now(timezone.utc).timestamp())
-    claims = {
-        "iss": "https://accounts.google.com",
-        "aud": get_settings().google_client_id,
-        "sub": "google-ana",
-        "email": "Ana@Hack4Edu.org",
-        "email_verified": True,
-        "name": "Ana López",
-        "iat": now,
-        "exp": now + 300,
-    }
-    claims.update(overrides)
-    signer = crypt.RSASigner.from_string(private_pem, KEY_ID)
-    return google_jwt.encode(signer, claims).decode()
-
-
-@pytest.fixture(autouse=True)
-def google_certs(monkeypatch):
-    """Sirve las claves de prueba en lugar de descargar las de Google."""
-
-    def fake_request(url, method="GET", **_):
-        return SimpleNamespace(status=200, data=json.dumps({KEY_ID: CERTIFICATE_PEM}).encode())
-
-    monkeypatch.setattr(auth_service, "_http_request", fake_request)
-
-
-def _login(client, **token_overrides):
-    return client.post(GOOGLE, json={"credential": _token(**token_overrides)})
-
-
-def _users(client):
+def _users():
     with next(app.dependency_overrides[get_db]()) as db:
         return db.query(User).all()
 
 
-def test_first_login_creates_account_and_returns_usable_token(client):
-    response = _login(client)
+def test_first_request_creates_user_from_token(client):
+    response = _me(client, make_token(email="Ana@Hack4Edu.org", name="Ana López"))
 
     assert response.status_code == 200
-    body = response.json()
-    assert body["token_type"] == "bearer"
-    assert body["user"]["email"] == "ana@hack4edu.org"
-    assert body["user"]["name"] == "Ana López"
-    assert "google_sub" not in response.text
-    assert "password_hash" not in response.text
-    claims = jwt.decode(
-        body["access_token"], "test-secret-with-at-least-32-characters", algorithms=["HS256"]
-    )
-    assert claims["sub"] == body["user"]["id"]
-    assert claims["exp"] > claims["iat"]
-    profile = client.get(
-        "/api/profiles/me", headers={"Authorization": f"Bearer {body['access_token']}"}
-    )
-    assert profile.status_code == 200
+    assert response.json()["email"] == "ana@hack4edu.org"
+    assert response.json()["name"] == "Ana López"
+    assert "supabase_user_id" not in response.text
+    assert "password" not in response.text.lower()
 
 
-def test_second_login_reuses_account_even_if_google_email_changes(client):
-    first = _login(client).json()
+def test_next_requests_reuse_the_user(client):
+    sub = str(uuid4())
 
-    second = _login(client, email="nuevo@hack4edu.org").json()
+    first = _me(client, make_token(sub=sub)).json()
+    second = _me(client, make_token(sub=sub, email="nuevo@hack4edu.org")).json()
 
-    assert second["user"]["id"] == first["user"]["id"]
-    assert len(_users(client)) == 1
-
-
-@pytest.mark.parametrize("name", [None, "   "])
-def test_name_falls_back_to_email_prefix(client, name):
-    assert _login(client, name=name).json()["user"]["name"] == "ana"
+    assert second["id"] == first["id"]
+    assert len(_users()) == 1
 
 
-def test_long_google_name_is_truncated(client):
-    assert len(_login(client, name="x" * 300).json()["user"]["name"]) == 100
+def test_user_id_comes_from_token_not_from_local_id(client):
+    first = _me(client, make_token(sub=str(uuid4()), email="ana@hack4edu.org")).json()
+    other = _me(client, make_token(sub=first["id"], email="bea@hack4edu.org")).json()
+
+    assert other["id"] != first["id"]
+    assert other["email"] == "bea@hack4edu.org"
 
 
-def test_existing_account_is_linked_by_verified_email(client):
-    with next(app.dependency_overrides[get_db]()) as db:
-        db.add(User(name="Ana", email="ana@hack4edu.org", password_hash="legacy"))
-        db.commit()
+@pytest.mark.parametrize("metadata", [None, {}, {"name": "   "}, {"name": 7}, "texto"])
+def test_name_falls_back_to_email_prefix(client, metadata):
+    token = make_token(user_metadata=metadata)
 
-    response = _login(client)
-
-    assert response.status_code == 200
-    users = _users(client)
-    assert len(users) == 1
-    assert users[0].google_sub == "google-ana"
+    assert _me(client, token).json()["name"] == "ana"
 
 
-def test_email_of_another_google_account_is_rejected(client):
-    original = _login(client).json()
+def test_long_name_is_truncated(client):
+    assert len(_me(client, make_token(name="x" * 300)).json()["name"]) == 100
 
-    response = _login(client, sub="google-impostor")
+
+def test_email_of_another_account_is_not_taken_over(client):
+    original = _me(client, make_token(sub=str(uuid4()))).json()
+
+    response = _me(client, make_token(sub=str(uuid4())))
 
     assert response.status_code == 409
-    users = _users(client)
+    users = _users()
     assert len(users) == 1
-    assert str(users[0].id) == original["user"]["id"]
-    assert users[0].google_sub == "google-ana"
+    assert str(users[0].id) == original["id"]
 
 
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"aud": "otra-app.apps.googleusercontent.com"},
-        {"iss": "https://accounts.evil.example"},
+        {"aud": "anon"},
+        {"aud": None},
+        {"iss": "https://otro-proyecto.supabase.co/auth/v1"},
+        {"iss": None},
         {"exp": 1_000_000_000, "iat": 999_999_000},
-        {"email_verified": False},
-        {"email_verified": "true"},
+        {"exp": None},
+        {"sub": None},
+        {"sub": "no-es-un-uuid"},
         {"email": None},
-        {"private_pem": OTHER_PRIVATE_PEM},
+        {"email": ""},
+        {"is_anonymous": True},
+        {"key": ec.generate_private_key(ec.SECP256R1())},
     ],
-    ids=["audience", "issuer", "expired", "unverified", "non-boolean", "no-email", "bad-signature"],
+    ids=[
+        "wrong-audience",
+        "no-audience",
+        "other-project",
+        "no-issuer",
+        "expired",
+        "no-expiry",
+        "no-sub",
+        "bad-sub",
+        "no-email",
+        "empty-email",
+        "anonymous",
+        "bad-signature",
+    ],
 )
 def test_invalid_tokens_are_rejected_and_create_nothing(client, overrides):
-    response = _login(client, **overrides)
+    response = _me(client, make_token(**overrides))
 
     assert response.status_code == 401
-    assert "access_token" not in response.text
-    assert _users(client) == []
+    assert _users() == []
+
+
+def test_symmetric_token_is_rejected(client):
+    token = make_token(key="clave-simetrica-de-al-menos-32-caracteres", algorithm="HS256")
+
+    assert _me(client, token).status_code == 401
+
+
+def test_unsigned_token_is_rejected(client):
+    token = make_token(key=None, algorithm="none")
+
+    assert _me(client, token).status_code == 401
 
 
 def test_malformed_token_is_rejected(client):
-    assert client.post(GOOGLE, json={"credential": "no-es-un-jwt"}).status_code == 401
+    assert _me(client, "no-es-un-jwt").status_code == 401
 
 
-@pytest.mark.parametrize(
-    "body",
-    [{}, {"credential": ""}, {"credential": "x" * 4097}, {"credential": "x", "is_active": False}],
-)
-def test_invalid_input_is_rejected(client, body):
-    assert client.post(GOOGLE, json=body).status_code == 422
+def test_missing_token_is_rejected(client):
+    assert client.get(ME).status_code == 401
 
 
-def test_validation_error_does_not_echo_credential(client):
-    secret = "s3cret" * 700
-
-    response = client.post(GOOGLE, json={"credential": secret})
-
-    assert response.status_code == 422
-    assert secret not in response.text
-
-
-def test_inactive_user_cannot_log_in(client):
-    _login(client)
+def test_inactive_user_is_rejected(client):
+    token = make_token()
+    _me(client, token)
     with next(app.dependency_overrides[get_db]()) as db:
         db.query(User).update({User.is_active: False})
         db.commit()
 
-    assert _login(client).status_code == 403
+    assert _me(client, token).status_code == 401
 
 
-@pytest.mark.parametrize("path", ["/api/auth/login", "/api/auth/register"])
-def test_password_endpoints_no_longer_exist(client, path):
-    assert client.post(path, json={"email": "a@b.co", "password": "password123"}).status_code == 404
+@pytest.mark.parametrize(
+    "path", ["/api/auth/login", "/api/auth/register", "/api/auth/google"]
+)
+def test_old_auth_endpoints_no_longer_exist(client, path):
+    assert client.post(path, json={}).status_code == 404
 
 
-def test_login_is_rate_limited(client):
-    statuses = [client.post(GOOGLE, json={"credential": "x"}).status_code for _ in range(11)]
+def test_unknown_signing_key_is_rejected(client, monkeypatch):
+    def fail(_):
+        raise jwt.PyJWKClientError("clave desconocida")
 
-    assert statuses == [401] * 10 + [429]
+    monkeypatch.setattr(security, "_signing_key", fail)
+
+    assert _me(client, make_token()).status_code == 401
 
 
-def test_google_outage_returns_503(client, monkeypatch):
-    def fail(*_, **__):
-        raise exceptions.TransportError("google down")
+def test_supabase_outage_returns_503(client, monkeypatch):
+    def fail(_):
+        raise jwt.PyJWKClientConnectionError("supabase caído")
 
-    monkeypatch.setattr(auth_service, "_http_request", fail)
+    monkeypatch.setattr(security, "_signing_key", fail)
 
-    assert _login(client).status_code == 503
+    assert _me(client, make_token()).status_code == 503
+
+
+def test_signing_key_is_read_from_the_project_jwks(monkeypatch):
+    urls = []
+
+    class FakeClient:
+        def __init__(self, url, **_):
+            urls.append(url)
+
+        def get_signing_key_from_jwt(self, _):
+            return SimpleNamespace(key="clave")
+
+    security._jwks_client.cache_clear()
+    monkeypatch.setattr(jwt, "PyJWKClient", FakeClient)
+
+    assert jwt.PyJWKClient is FakeClient
+    assert security._jwks_client().get_signing_key_from_jwt("token").key == "clave"
+    assert urls == ["https://test-project.supabase.co/auth/v1/.well-known/jwks.json"]
+    security._jwks_client.cache_clear()
 
 
 def test_database_outage_returns_503_without_details(client, monkeypatch):
     def fail(*_):
         raise OperationalError("SELECT secret", {}, Exception("db password leaked"))
 
-    monkeypatch.setattr(auth_service, "get_or_create_google_user", fail)
+    monkeypatch.setattr(auth_service, "get_or_create_user", fail)
 
-    response = _login(client)
+    response = _me(client, make_token())
 
     assert response.status_code == 503
     assert "leaked" not in response.text
 
 
-def _rate_limited_statuses(client, ip):
-    return [
-        client.post(
-            GOOGLE, json={"credential": "x"}, headers={"X-Forwarded-For": ip}
-        ).status_code
-        for _ in range(11)
-    ]
+def _request(forwarded_for):
+    headers = [(b"x-forwarded-for", forwarded_for.encode())]
+    return Request({"type": "http", "headers": headers, "client": ("10.0.0.1", 1)})
 
 
-def test_on_vercel_rate_limit_is_per_visitor(client, monkeypatch):
+def test_on_vercel_rate_limit_uses_visitor_ip(monkeypatch):
     monkeypatch.setenv("VERCEL", "1")
 
-    assert _rate_limited_statuses(client, "203.0.113.1")[-1] == 429
-    assert _rate_limited_statuses(client, "203.0.113.2")[0] == 401
+    assert security.client_ip(_request("203.0.113.1, 10.0.0.2")) == "203.0.113.1"
 
 
-def test_outside_vercel_forwarded_header_cannot_bypass_rate_limit(client, monkeypatch):
+def test_outside_vercel_forwarded_header_is_ignored(monkeypatch):
     monkeypatch.delenv("VERCEL", raising=False)
 
-    assert _rate_limited_statuses(client, "203.0.113.1")[-1] == 429
-    assert _rate_limited_statuses(client, "203.0.113.2")[0] == 429
+    assert security.client_ip(_request("203.0.113.1")) == "10.0.0.1"

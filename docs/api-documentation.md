@@ -8,15 +8,11 @@ Errores: `{"detail": "..."}`, o una lista de `{loc, msg, type}` en los `422` (nu
 
 ## Auth
 
-El único acceso es Google: no hay registro ni login con contraseña. La primera vez se crea la cuenta; si ya existía una con ese email verificado, se vincula.
+Registro, inicio de sesión, renovación de tokens y confirmación de correo los gestiona Supabase Auth desde el frontend, así que esta API no tiene rutas de auth y nunca recibe contraseñas.
 
-| Método | Ruta | Cuerpo | Respuestas | Límite |
-|---|---|---|---|---|
-| POST | `/auth/google` | `credential` (ID token de Google) | `200` token y usuario · `401` token no válido o email sin verificar · `403` cuenta desactivada · `409` email vinculado a otra cuenta de Google · `503` Google no disponible | 10/min por IP |
+El token es el `access_token` de Supabase. El backend verifica firma (claves públicas del proyecto, `ES256` o `RS256`), caducidad, emisor y audiencia `authenticated`. La primera petición válida crea el usuario con el `sub`, el email y `user_metadata.name` del token.
 
-El backend verifica firma, caducidad, emisor y que la audiencia sea `GOOGLE_CLIENT_ID`.
-
-Respuesta: `{"access_token", "token_type": "bearer", "user": {"id", "name", "email", "created_at"}}`. El token caduca a los `ACCESS_TOKEN_EXPIRE_MINUTES`.
+Respuestas comunes de los endpoints protegidos: `401` token no válido o cuenta desactivada · `409` el email ya pertenece a otra cuenta · `503` no se pudieron obtener las claves de Supabase.
 
 ## Perfil
 

@@ -10,7 +10,7 @@ Supabase publica el esquema `public` en una API REST. **Toda tabla nueva debe ac
 
 | Tabla | Contenido | Reglas clave |
 |---|---|---|
-| `users` | Cuenta: nombre, email, `google_sub` | Email y `google_sub` únicos; email en minúsculas; `password_hash` sin uso (acceso solo con Google) |
+| `users` | Cuenta: nombre, email, `supabase_user_id` | Email y `supabase_user_id` únicos; email en minúsculas; las credenciales están en Supabase Auth; `password_hash` sin uso |
 | `profiles` | Biografía | Se crea al guardar por primera vez |
 | `skills` | Catálogo de habilidades | Nombre único sin distinguir mayúsculas |
 | `user_skills` | Qué ofrece o busca cada usuario | `kind`: `offering` o `seeking` |

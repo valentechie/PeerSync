@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowLeftRight } from 'lucide-react';
 
 /** Logo: dos personas dentro de un ciclo de enseñar y aprender. */
 export const SwapMark: React.FC<{ className?: string }> = ({ className = 'w-9 h-9' }) => (
@@ -23,19 +22,6 @@ export const Avatar: React.FC<{ name: string; tone?: 'teach' | 'learn'; classNam
     {name.charAt(0).toUpperCase() || 'U'}
   </div>
 );
-
-/** Muestra "A ⇄ B" con cada lado del intercambio en su color. */
-export const SwapTopic: React.FC<{ topic: string }> = ({ topic }) => {
-  const [first, second] = topic.split(' ⇄ ');
-  if (!second) return <span>{topic}</span>;
-  return (
-    <span className="inline-flex flex-wrap items-center gap-x-2">
-      <span className="text-teach-strong">{first}</span>
-      <ArrowLeftRight className="w-4 h-4 text-muted" role="img" aria-label="a cambio de" />
-      <span className="text-learn-strong">{second}</span>
-    </span>
-  );
-};
 
 export const SkillList: React.FC<{ title: string; skills?: string[]; tone: 'teach' | 'learn' }> = ({ title, skills, tone }) => (
   <div>

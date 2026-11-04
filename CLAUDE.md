@@ -5,7 +5,7 @@ Eres el asistente de desarrollo de IA colaborando en el repositorio **PeerSync**
 ## Stack Tecnológico Fijo (No modificar sin aprobación)
 - **Backend**: Python + FastAPI
 - **Base de datos**: PostgreSQL con SQLAlchemy y Alembic (migraciones)[cite: 1]
-- **Auth**: Google SSO como único acceso (ID token verificado en backend) + JWT propio[cite: 1]
+- **Auth**: Supabase Auth con email y contraseña; el backend verifica sus tokens[cite: 1]
 - **IA**: Gemini API — **estrictamente invocada desde el backend (`backend/app/ai/`)**, nunca desde el frontend[cite: 1].
 - **Frontend** (existente, no tocar su stack): React + TypeScript + Vite + Tailwind[cite: 1].
 

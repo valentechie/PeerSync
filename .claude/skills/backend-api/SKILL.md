@@ -13,7 +13,7 @@ StudyMind AI, TeachBack AI).
 
 - **Backend**: Python + FastAPI
 - **Base de datos**: PostgreSQL (SQLAlchemy + Alembic para migraciones)
-- **Auth**: Google SSO como único acceso (ID token verificado en backend) + JWT propio
+- **Auth**: Supabase Auth con email y contraseña; el backend verifica sus tokens
 - **IA**: Gemini API — **solo invocada desde el backend, nunca desde el frontend**
 - **Tiempo real**: WebSockets cuando la sala de estudio lo requiera
 - **Frontend** (ya existe, no tocar su stack): React + TypeScript + Vite + Tailwind
@@ -103,14 +103,15 @@ pulir nada:
 5. Ejecuta lint, typecheck y tests cuando existan antes de dar algo por
    terminado.
 6. Actualiza `docs/api-documentation.md` y `docs/database-design.md`
-   según vayas definiendo endpoints y tablas (están vacíos ahora mismo).
+   según vayas definiendo endpoints y tablas.
 7. Al terminar cada fase, resume: archivos tocados, decisiones tomadas,
    comandos ejecutados, resultados y el siguiente paso pendiente.
 
-## Estado actual del repo (punto de partida)
+## Estado actual del repo
 
-Todo `backend/app/**/*.py`, `database/schema.sql`, `backend/.env.example`
-y los `docs/*.md` están vacíos — es un esqueleto sin implementar. Empieza
-por `core/config.py` y `core/database.py` (conexión a Postgres), luego
-`models/user.py` + `schemas/user.py` + `api/endpoints/auth.py` para tener
-el primer flujo (registro/login) funcionando de punta a punta.
+Implementado: acceso con Supabase Auth, perfil, matching determinista
+y envío de solicitudes. Los modelos y las tablas de sesiones ya existen.
+
+Pendiente, en este orden: aceptar o rechazar solicitudes, sala de estudio,
+StudyMind, TeachBack y resumen de sesión. Hasta entonces, el frontend muestra
+estados vacíos en esas pantallas.

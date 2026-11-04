@@ -24,7 +24,7 @@ def db():
 
 
 def _user(db, name):
-    user = User(name=name, email=f"{name}@hack4edu.org", google_sub=f"sub-{name}")
+    user = User(name=name, email=f"{name}@hack4edu.org", supabase_user_id=uuid4())
     db.add(user)
     db.flush()
     return user

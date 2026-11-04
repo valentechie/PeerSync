@@ -1,99 +1,68 @@
 from dataclasses import dataclass
-from functools import partial
+from uuid import UUID
 
-from google.auth.exceptions import GoogleAuthError, TransportError
-from google.auth.transport.requests import Request as GoogleRequest
-from google.oauth2 import id_token
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
 from app.models.user import User
 
 MAX_NAME_LENGTH = 100
 
-# Se usa para descargar las claves públicas de Google.
-_http_request = partial(GoogleRequest(), timeout=5)
 
-
-class InvalidGoogleCredentialError(Exception):
-    pass
-
-
-class GoogleUnavailableError(Exception):
-    pass
-
-
-class GoogleAccountConflictError(Exception):
-    pass
-
-
-class InactiveAccountError(Exception):
+class EmailAlreadyInUseError(Exception):
     pass
 
 
 @dataclass(frozen=True)
-class GoogleIdentity:
-    sub: str
+class SupabaseIdentity:
+    id: UUID
     email: str
     name: str
 
 
-def verify_google_credential(credential: str) -> GoogleIdentity:
-    """Comprueba firma, caducidad, emisor y audiencia del ID token de Google."""
-    try:
-        claims = id_token.verify_oauth2_token(
-            credential,
-            _http_request,
-            audience=get_settings().google_client_id,
-            clock_skew_in_seconds=10,
-        )
-    except TransportError as exc:
-        raise GoogleUnavailableError from exc
-    except (ValueError, GoogleAuthError) as exc:
-        raise InvalidGoogleCredentialError from exc
-
-    # Sin email verificado no se puede vincular la cuenta con seguridad.
+def identity_from_claims(claims: dict) -> SupabaseIdentity:
+    """Extrae la identidad de un token ya verificado. Lanza ValueError si está incompleta."""
     email = claims.get("email")
-    if not email or claims.get("email_verified") is not True:
-        raise InvalidGoogleCredentialError
-
+    if not isinstance(email, str) or not email or claims.get("is_anonymous") is True:
+        raise ValueError("El token no identifica a un usuario con email")
     email = email.lower()
-    name = (claims.get("name") or "").strip() or email.split("@")[0]
-    return GoogleIdentity(sub=claims["sub"], email=email, name=name[:MAX_NAME_LENGTH])
+
+    metadata = claims.get("user_metadata")
+    name = metadata.get("name") if isinstance(metadata, dict) else None
+    name = name.strip() if isinstance(name, str) else ""
+    return SupabaseIdentity(
+        id=UUID(claims["sub"]),
+        email=email,
+        name=(name or email.split("@")[0])[:MAX_NAME_LENGTH],
+    )
 
 
-def get_or_create_google_user(db: Session, identity: GoogleIdentity) -> User:
-    user = _find_by_sub(db, identity.sub) or _link_or_create(db, identity)
-    if not user.is_active:
-        raise InactiveAccountError
-    return user
+def get_or_create_user(db: Session, identity: SupabaseIdentity) -> User:
+    """Crea el usuario la primera vez que llega con un token válido.
 
+    No se enlaza por email con cuentas existentes: Supabase puede tener desactivada
+    la confirmación de correo, así que el email del token no prueba su propiedad.
+    """
+    user = _find(db, identity.id)
+    if user is not None:
+        return user
 
-def _find_by_sub(db: Session, sub: str) -> User | None:
-    return db.scalar(select(User).where(User.google_sub == sub))
-
-
-def _link_or_create(db: Session, identity: GoogleIdentity) -> User:
-    user = db.scalar(select(User).where(User.email == identity.email))
-    if user is None:
-        user = User(name=identity.name, email=identity.email, google_sub=identity.sub)
-        db.add(user)
-    elif user.google_sub is None:
-        user.google_sub = identity.sub
-    else:
-        raise GoogleAccountConflictError
-
+    user = User(name=identity.name, email=identity.email, supabase_user_id=identity.id)
+    db.add(user)
     try:
         # Se confía en los constraints únicos: comprobar antes dejaría abierta una carrera.
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        # Dos peticiones simultáneas del mismo primer acceso: la otra ya creó la cuenta.
-        existing = _find_by_sub(db, identity.sub)
+        # Dos peticiones simultáneas del mismo primer acceso: la otra ya creó el usuario.
+        existing = _find(db, identity.id)
         if existing is None:
-            raise GoogleAccountConflictError from exc
+            raise EmailAlreadyInUseError from exc
         return existing
     db.refresh(user)
     return user
+
+
+def _find(db: Session, supabase_user_id: UUID) -> User | None:
+    return db.scalar(select(User).where(User.supabase_user_id == supabase_user_id))
