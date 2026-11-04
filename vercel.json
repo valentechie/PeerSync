@@ -1,39 +1,32 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "frontend": {
-      "root": "frontend/",
-      "framework": "vite",
-      "rewrites": [
-        {
-          "source": "/(.*)",
-          "destination": "/index.html"
-        }
-      ]
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist"
+      }
     },
-    "backend": {
-      "root": "backend/",
-      "framework": "fastapi",
-      "entrypoint": "app.main:app",
-      "functions": {
-        "app/main.py": {
-          "excludeFiles": "{.env,.env.*,.venv/**,node_modules/**,tests/**,alembic/**,.agents/**,.claude/**,.pytest_cache/**,.vercel/**,alembic.ini,pytest.ini,package.json,package-lock.json,skills-lock.json,requirements-dev.txt}"
-        }
+    {
+      "src": "backend/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "excludeFiles": "{.claude/**,CLAUDE.md,GEMINI.md,README.md,database/**,docs/**,infra/**,frontend/**,backend/.env,backend/.env.*,backend/.venv/**,backend/node_modules/**,backend/tests/**,backend/alembic/**,backend/.agents/**,backend/.claude/**,backend/.pytest_cache/**,backend/alembic.ini,backend/pytest.ini,backend/package.json,backend/package-lock.json,backend/skills-lock.json,backend/requirements-dev.txt,package.json,package-lock.json,.env.example,.vercelignore,vercel.json}"
       }
     }
-  },
-  "rewrites": [
+  ],
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
+      "src": "/api/(.*)",
+      "dest": "backend/index.py"
     },
     {
-      "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }

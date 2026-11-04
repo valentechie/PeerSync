@@ -16,9 +16,9 @@ npm run dev
 
 ## Despliegue en Vercel
 
-`vercel.json` despliega frontend y API en un solo proyecto: `/api/*` va a FastAPI y el resto a la web de Vite.
+`vercel.json` despliega frontend y API en un solo proyecto: `/api/*` va a FastAPI (`backend/index.py`) y el resto a la web de Vite. Usa `builds`, así que Vercel ignora el preset y los comandos del panel.
 
-1. Importa el repositorio en Vercel y deja **Root Directory** en la raíz. Si te pide un preset, elige **Services**.
+1. Importa el repositorio en Vercel y deja **Root Directory** en la raíz.
 2. Añade estas variables de entorno al proyecto:
 
 | Variable | Valor |
