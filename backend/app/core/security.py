@@ -1,6 +1,7 @@
 import os
-from functools import lru_cache
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
+from uuid import UUID
 
 import jwt
 from fastapi import Depends, HTTPException, Request, status
@@ -12,12 +13,8 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.models.user import User
-from app.services import auth_service
 
-# Supabase firma con claves asimétricas. Nunca se acepta HS256: un token simétrico
-# podría firmarse usando la clave pública como secreto.
-JWT_ALGORITHMS = ["ES256", "RS256"]
-JWT_AUDIENCE = "authenticated"
+JWT_ALGORITHM = "HS256"
 
 
 def client_ip(request: Request) -> str:
@@ -34,14 +31,15 @@ def client_ip(request: Request) -> str:
 limiter = Limiter(key_func=client_ip)
 
 
-@lru_cache
-def _jwks_client() -> jwt.PyJWKClient:
-    url = f"{get_settings().supabase_url}/auth/v1/.well-known/jwks.json"
-    return jwt.PyJWKClient(url, lifespan=600, timeout=5)
-
-
-def _signing_key(token: str):
-    return _jwks_client().get_signing_key_from_jwt(token).key
+def create_access_token(user_id: UUID) -> str:
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    claims = {
+        "sub": str(user_id),
+        "iat": now,
+        "exp": now + timedelta(minutes=settings.access_token_expire_minutes),
+    }
+    return jwt.encode(claims, settings.jwt_secret, algorithm=JWT_ALGORITHM)
 
 
 _bearer = HTTPBearer(auto_error=False)
@@ -59,31 +57,19 @@ def get_current_user(
     )
     if credentials is None:
         raise unauthorized
-    token = credentials.credentials
     try:
         claims = jwt.decode(
-            token,
-            _signing_key(token),
-            algorithms=JWT_ALGORITHMS,
-            audience=JWT_AUDIENCE,
-            issuer=f"{get_settings().supabase_url}/auth/v1",
-            options={"require": ["exp", "sub", "aud", "iss"]},
+            credentials.credentials,
+            get_settings().jwt_secret,
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["exp", "sub"]},
         )
-        identity = auth_service.identity_from_claims(claims)
-    except jwt.PyJWKClientConnectionError as exc:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "Servicio no disponible temporalmente"
-        ) from exc
-    except (jwt.InvalidTokenError, jwt.PyJWKClientError, ValueError) as exc:
+        user_id = UUID(claims["sub"])
+    except (jwt.InvalidTokenError, ValueError) as exc:
         raise unauthorized from exc
 
-    try:
-        user = auth_service.get_or_create_user(db, identity)
-    except auth_service.EmailAlreadyInUseError as exc:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Este correo ya pertenece a otra cuenta de PeerSync"
-        ) from exc
-    if not user.is_active:
+    user = db.get(User, user_id)
+    if user is None or not user.is_active:
         raise unauthorized
     return user
 

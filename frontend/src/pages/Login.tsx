@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowRight, Lock, Mail } from 'lucide-react';
+import { ArrowRight, Lock, User } from 'lucide-react';
 import { ErrorState } from '../components/UIStates';
 import { AuthShell } from '../components/AuthShell';
 
 export const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,8 @@ export const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      // Modo demo: la contraseña no se comprueba ni se envía.
+      await login(username.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.');
     } finally {
@@ -29,32 +30,25 @@ export const Login: React.FC = () => {
 
   return (
     <AuthShell
-      title="Hola de nuevo"
-      subtitle="Tus compañeros de estudio te están esperando."
-      footer={
-        <>
-          ¿No tienes una cuenta?{' '}
-          <Link to="/register" className="font-bold text-teach underline underline-offset-2 hover:text-teach-strong">
-            Regístrate aquí
-          </Link>
-        </>
-      }
+      title="Entra en PeerSync"
+      subtitle="Modo demo: escribe cualquier usuario y contraseña. Si no existe, lo creamos."
     >
       {error && <ErrorState message={error} />}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="label">Correo electrónico</label>
+          <label htmlFor="username" className="label">Usuario o correo</label>
           <div className="relative">
-            <Mail className="w-4 h-4 text-muted absolute left-3.5 top-3.5" />
+            <User className="w-4 h-4 text-muted absolute left-3.5 top-3.5" />
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               required
-              autoComplete="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="tu@correo.com"
+              maxLength={320}
+              autoComplete="username"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="Inventa uno"
               className="field pl-10"
             />
           </div>
@@ -67,18 +61,17 @@ export const Login: React.FC = () => {
             <input
               id="password"
               type="password"
-              required
-              autoComplete="current-password"
+              autoComplete="off"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="La que quieras"
               className="field pl-10"
             />
           </div>
         </div>
 
         <button type="submit" disabled={loading} className="btn btn-primary w-full py-3">
-          <span>{loading ? 'Iniciando sesión...' : 'Ingresar'}</span>
+          <span>{loading ? 'Entrando...' : 'Entrar'}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </form>

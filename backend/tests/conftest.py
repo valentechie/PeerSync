@@ -1,24 +1,17 @@
 import os
-import time
-import uuid
-
-SUPABASE_URL = "https://test-project.supabase.co"
 
 # Deben definirse antes de importar la app. El engine de la app nunca se conecta:
 # get_db se sustituye abajo.
 os.environ["DATABASE_URL"] = "postgresql://unused:unused@localhost:1/unused"
-os.environ["SUPABASE_URL"] = SUPABASE_URL
+os.environ["JWT_SECRET"] = "test-secret-with-at-least-32-characters"
 
-import jwt
 import pytest
-from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
-from app.core import security
 from app.core.security import limiter
 from app.main import app
 
@@ -52,38 +45,15 @@ def client():
     engine.dispose()
 
 
-SIGNING_KEY = ec.generate_private_key(ec.SECP256R1())
-
-
-def make_token(email="ana@hack4edu.org", name="Ana", key=SIGNING_KEY, algorithm="ES256", **overrides):
-    """Token con la forma de Supabase Auth. Un claim a None se omite."""
-    now = int(time.time())
-    claims = {
-        "iss": f"{SUPABASE_URL}/auth/v1",
-        "aud": "authenticated",
-        "role": "authenticated",
-        "sub": str(uuid.uuid5(uuid.NAMESPACE_DNS, email or "sin-email")),
-        "email": email,
-        "user_metadata": {"name": name},
-        "is_anonymous": False,
-        "iat": now,
-        "exp": now + 300,
-        **overrides,
-    }
-    return jwt.encode({k: v for k, v in claims.items() if v is not None}, key, algorithm=algorithm)
-
-
-@pytest.fixture(autouse=True)
-def supabase_signing_key(monkeypatch):
-    """Evita descargar las claves públicas de Supabase."""
-    monkeypatch.setattr(security, "_signing_key", lambda _: SIGNING_KEY.public_key())
-
-
 @pytest.fixture
-def auth_headers():
-    """Devuelve las cabeceras de un usuario con sesión de Supabase."""
+def auth_headers(client):
+    """Entra con un usuario, le pone nombre y devuelve las cabeceras con su token."""
 
     def _headers(email="ana@hack4edu.org", name="Ana"):
-        return {"Authorization": f"Bearer {make_token(email=email, name=name)}"}
+        response = client.post("/api/auth/login", json={"email": email})
+        assert response.status_code == 200
+        headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
+        assert client.patch("/api/profiles/me", json={"name": name}, headers=headers).status_code == 200
+        return headers
 
     return _headers

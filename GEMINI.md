@@ -8,7 +8,7 @@ PRODUCTO
 STACK
 React + TypeScript + Vite + Tailwind; Python + FastAPI; PostgreSQL;
 WebSockets cuando hagan falta; Gemini API solo desde backend;
-Supabase Auth (email y contraseña); Git.
+Modo demo sin comprobar credenciales y JWT propio; Git.
 No cambies el stack sin explicar el motivo y pedir aprobación.
 ARQUITECTURA Y UX
 Separa páginas, componentes, features, servicios, modelos, esquemas,

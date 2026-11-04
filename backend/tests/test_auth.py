@@ -1,9 +1,4 @@
-from types import SimpleNamespace
-from uuid import uuid4
-
-import jwt
 import pytest
-from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy.exc import OperationalError
 from starlette.requests import Request
 
@@ -12,9 +7,13 @@ from app.core.database import get_db
 from app.main import app
 from app.models.user import User
 from app.services import auth_service
-from conftest import make_token
 
+LOGIN = "/api/auth/login"
 ME = "/api/profiles/me"
+
+
+def _login(client, username):
+    return client.post(LOGIN, json={"email": username})
 
 
 def _me(client, token):
@@ -26,175 +25,99 @@ def _users():
         return db.query(User).all()
 
 
-def test_first_request_creates_user_from_token(client):
-    response = _me(client, make_token(email="Ana@Hack4Edu.org", name="Ana López"))
+@pytest.mark.parametrize(
+    "username, expected_name",
+    [("pepito", "pepito"), ("x", "x"), ("foo@bar", "foo"), ("a b c", "a b c"), ("@", "@"), ("Ana@Hack4Edu.org", "ana")],
+)
+def test_any_invented_user_can_log_in(client, username, expected_name):
+    response = _login(client, username)
 
     assert response.status_code == 200
-    assert response.json()["email"] == "ana@hack4edu.org"
-    assert response.json()["name"] == "Ana López"
-    assert "supabase_user_id" not in response.text
-    assert "password" not in response.text.lower()
+    profile = _me(client, response.json()["access_token"])
+    assert profile.status_code == 200
+    assert profile.json()["email"] == username.lower()
+    assert profile.json()["name"] == expected_name
 
 
-def test_next_requests_reuse_the_user(client):
-    sub = str(uuid4())
+def test_password_is_ignored(client):
+    response = client.post(LOGIN, json={"email": "pepito", "password": "lo-que-sea"})
 
-    first = _me(client, make_token(sub=sub)).json()
-    second = _me(client, make_token(sub=sub, email="nuevo@hack4edu.org")).json()
+    assert response.status_code == 200
+    assert "lo-que-sea" not in response.text
+
+
+def test_same_user_returns_to_the_same_account(client):
+    first = _me(client, _login(client, "pepito").json()["access_token"]).json()
+    second = _me(client, _login(client, " PEPITO ").json()["access_token"]).json()
 
     assert second["id"] == first["id"]
     assert len(_users()) == 1
 
 
-def test_user_id_comes_from_token_not_from_local_id(client):
-    first = _me(client, make_token(sub=str(uuid4()), email="ana@hack4edu.org")).json()
-    other = _me(client, make_token(sub=first["id"], email="bea@hack4edu.org")).json()
+def test_account_keeps_its_data_between_logins(client):
+    token = _login(client, "pepito").json()["access_token"]
+    client.patch(ME, json={"bio": "Hola"}, headers={"Authorization": f"Bearer {token}"})
 
-    assert other["id"] != first["id"]
-    assert other["email"] == "bea@hack4edu.org"
-
-
-@pytest.mark.parametrize("metadata", [None, {}, {"name": "   "}, {"name": 7}, "texto"])
-def test_name_falls_back_to_email_prefix(client, metadata):
-    token = make_token(user_metadata=metadata)
-
-    assert _me(client, token).json()["name"] == "ana"
+    assert _me(client, _login(client, "pepito").json()["access_token"]).json()["bio"] == "Hola"
 
 
-def test_long_name_is_truncated(client):
-    assert len(_me(client, make_token(name="x" * 300)).json()["name"]) == 100
+def test_existing_account_without_password_login_can_enter(client):
+    with next(app.dependency_overrides[get_db]()) as db:
+        db.add(User(name="Antigua", email="antigua@gmail.com", password_hash="x"))
+        db.commit()
+
+    profile = _me(client, _login(client, "antigua@gmail.com").json()["access_token"]).json()
+
+    assert profile["name"] == "Antigua"
+    assert len(_users()) == 1
 
 
-def test_email_of_another_account_is_not_taken_over(client):
-    original = _me(client, make_token(sub=str(uuid4()))).json()
+def test_long_user_gets_a_truncated_name(client):
+    token = _login(client, "x" * 300).json()["access_token"]
 
-    response = _me(client, make_token(sub=str(uuid4())))
-
-    assert response.status_code == 409
-    users = _users()
-    assert len(users) == 1
-    assert str(users[0].id) == original["id"]
+    assert len(_me(client, token).json()["name"]) == 100
 
 
-@pytest.mark.parametrize(
-    "overrides",
-    [
-        {"aud": "anon"},
-        {"aud": None},
-        {"iss": "https://otro-proyecto.supabase.co/auth/v1"},
-        {"iss": None},
-        {"exp": 1_000_000_000, "iat": 999_999_000},
-        {"exp": None},
-        {"sub": None},
-        {"sub": "no-es-un-uuid"},
-        {"email": None},
-        {"email": ""},
-        {"is_anonymous": True},
-        {"key": ec.generate_private_key(ec.SECP256R1())},
-    ],
-    ids=[
-        "wrong-audience",
-        "no-audience",
-        "other-project",
-        "no-issuer",
-        "expired",
-        "no-expiry",
-        "no-sub",
-        "bad-sub",
-        "no-email",
-        "empty-email",
-        "anonymous",
-        "bad-signature",
-    ],
-)
-def test_invalid_tokens_are_rejected_and_create_nothing(client, overrides):
-    response = _me(client, make_token(**overrides))
-
-    assert response.status_code == 401
+@pytest.mark.parametrize("body", [{}, {"email": ""}, {"email": "   "}, {"email": "x" * 321}])
+def test_empty_or_oversized_user_is_rejected(client, body):
+    assert client.post(LOGIN, json=body).status_code == 422
     assert _users() == []
 
 
-def test_symmetric_token_is_rejected(client):
-    token = make_token(key="clave-simetrica-de-al-menos-32-caracteres", algorithm="HS256")
-
-    assert _me(client, token).status_code == 401
-
-
-def test_unsigned_token_is_rejected(client):
-    token = make_token(key=None, algorithm="none")
-
-    assert _me(client, token).status_code == 401
-
-
-def test_malformed_token_is_rejected(client):
-    assert _me(client, "no-es-un-jwt").status_code == 401
-
-
-def test_missing_token_is_rejected(client):
-    assert client.get(ME).status_code == 401
-
-
 def test_inactive_user_is_rejected(client):
-    token = make_token()
-    _me(client, token)
+    token = _login(client, "pepito").json()["access_token"]
     with next(app.dependency_overrides[get_db]()) as db:
         db.query(User).update({User.is_active: False})
         db.commit()
 
+    assert _login(client, "pepito").status_code == 403
     assert _me(client, token).status_code == 401
 
 
-@pytest.mark.parametrize(
-    "path", ["/api/auth/login", "/api/auth/register", "/api/auth/google"]
-)
+@pytest.mark.parametrize("token", ["no-es-un-jwt", "abc.def.ghi"])
+def test_protected_routes_still_need_a_token(client, token):
+    assert client.get(ME).status_code == 401
+    assert _me(client, token).status_code == 401
+
+
+@pytest.mark.parametrize("path", ["/api/auth/register", "/api/auth/google"])
 def test_old_auth_endpoints_no_longer_exist(client, path):
     assert client.post(path, json={}).status_code == 404
 
 
-def test_unknown_signing_key_is_rejected(client, monkeypatch):
-    def fail(_):
-        raise jwt.PyJWKClientError("clave desconocida")
+def test_login_is_rate_limited(client):
+    statuses = [_login(client, f"u{i}").status_code for i in range(61)]
 
-    monkeypatch.setattr(security, "_signing_key", fail)
-
-    assert _me(client, make_token()).status_code == 401
-
-
-def test_supabase_outage_returns_503(client, monkeypatch):
-    def fail(_):
-        raise jwt.PyJWKClientConnectionError("supabase caído")
-
-    monkeypatch.setattr(security, "_signing_key", fail)
-
-    assert _me(client, make_token()).status_code == 503
-
-
-def test_signing_key_is_read_from_the_project_jwks(monkeypatch):
-    urls = []
-
-    class FakeClient:
-        def __init__(self, url, **_):
-            urls.append(url)
-
-        def get_signing_key_from_jwt(self, _):
-            return SimpleNamespace(key="clave")
-
-    security._jwks_client.cache_clear()
-    monkeypatch.setattr(jwt, "PyJWKClient", FakeClient)
-
-    assert jwt.PyJWKClient is FakeClient
-    assert security._jwks_client().get_signing_key_from_jwt("token").key == "clave"
-    assert urls == ["https://test-project.supabase.co/auth/v1/.well-known/jwks.json"]
-    security._jwks_client.cache_clear()
+    assert statuses == [200] * 60 + [429]
 
 
 def test_database_outage_returns_503_without_details(client, monkeypatch):
     def fail(*_):
         raise OperationalError("SELECT secret", {}, Exception("db password leaked"))
 
-    monkeypatch.setattr(auth_service, "get_or_create_user", fail)
+    monkeypatch.setattr(auth_service, "get_or_create_demo_user", fail)
 
-    response = _me(client, make_token())
+    response = _login(client, "pepito")
 
     assert response.status_code == 503
     assert "leaked" not in response.text

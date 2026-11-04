@@ -14,8 +14,9 @@ class Settings(BaseSettings):
     )
 
     database_url: str
-    # Público: el frontend también lo usa, junto con la clave publicable.
-    supabase_url: str = "https://pfsswyaxrczroswnapsl.supabase.co"
+    # MODO DEMO: valor por defecto para no tener que configurar nada en el despliegue.
+    jwt_secret: str = "peersync-hackathon-demo-secret-not-for-production"
+    access_token_expire_minutes: int = 60 * 24 * 7
     cors_origins: str = "http://localhost:5173"
 
     @field_validator("database_url")
@@ -26,11 +27,6 @@ class Settings(BaseSettings):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url.removeprefix(prefix)
         return url
-
-    @field_validator("supabase_url")
-    @classmethod
-    def strip_trailing_slash(cls, url: str) -> str:
-        return url.rstrip("/")
 
     @property
     def cors_origin_list(self) -> list[str]:

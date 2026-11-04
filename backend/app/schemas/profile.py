@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 from pydantic.alias_generators import to_camel
 
 MAX_SKILLS_PER_LIST = 20
@@ -26,7 +26,7 @@ class ProfileRead(BaseModel):
 
     id: UUID
     name: str
-    email: EmailStr
+    email: str
     bio: str
     skills_offering: list[str]
     skills_seeking: list[str]

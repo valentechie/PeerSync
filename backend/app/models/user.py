@@ -12,11 +12,12 @@ class User(Base):
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(100))
+    # En modo demo es el usuario que se escribe al entrar, no siempre un correo.
     # Siempre en minúsculas: lo garantizan los esquemas de entrada.
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
-    # Cuenta de Supabase Auth (claim `sub`), que es quien gestiona las credenciales.
+    # Sin uso en modo demo.
     supabase_user_id: Mapped[UUID | None] = mapped_column(Uuid, unique=True, index=True)
-    # Sin uso: se conserva para las cuentas anteriores a Supabase Auth.
+    # Sin uso en modo demo.
     password_hash: Mapped[str | None] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

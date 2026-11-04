@@ -8,11 +8,13 @@ Errores: `{"detail": "..."}`, o una lista de `{loc, msg, type}` en los `422` (nu
 
 ## Auth
 
-Registro, inicio de sesión, renovación de tokens y confirmación de correo los gestiona Supabase Auth desde el frontend, así que esta API no tiene rutas de auth y nunca recibe contraseñas.
+**Modo demo para el hackathon: no hay contraseñas ni se comprueba ninguna credencial.** Cualquiera puede entrar como cualquier usuario.
 
-El token es el `access_token` de Supabase. El backend verifica firma (claves públicas del proyecto, `ES256` o `RS256`), caducidad, emisor y audiencia `authenticated`. La primera petición válida crea el usuario con el `sub`, el email y `user_metadata.name` del token.
+| Método | Ruta | Cuerpo | Respuestas | Límite |
+|---|---|---|---|---|
+| POST | `/auth/login` | `email` (cualquier texto, de 1 a 320 caracteres) | `200` `{"access_token", "token_type"}` · `403` cuenta desactivada · `422` | 60/min por IP |
 
-Respuestas comunes de los endpoints protegidos: `401` token no válido o cuenta desactivada · `409` el email ya pertenece a otra cuenta · `503` no se pudieron obtener las claves de Supabase.
+Si el usuario no existe, se crea. El token dura 7 días.
 
 ## Perfil
 

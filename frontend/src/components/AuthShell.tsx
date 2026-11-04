@@ -10,9 +10,8 @@ const STEPS = [
 export const AuthShell: React.FC<{
   title: string;
   subtitle: string;
-  footer: React.ReactNode;
   children: React.ReactNode;
-}> = ({ title, subtitle, footer, children }) => (
+}> = ({ title, subtitle, children }) => (
   <div className="min-h-screen grid lg:grid-cols-2">
     <aside className="hidden lg:flex flex-col justify-between bg-teach-strong text-white p-12 xl:p-16">
       <div className="flex items-center gap-3">
@@ -50,7 +49,6 @@ export const AuthShell: React.FC<{
           <p className="text-muted">{subtitle}</p>
         </div>
         {children}
-        <p className="text-sm text-muted">{footer}</p>
       </div>
     </main>
   </div>

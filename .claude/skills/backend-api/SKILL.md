@@ -13,7 +13,7 @@ StudyMind AI, TeachBack AI).
 
 - **Backend**: Python + FastAPI
 - **Base de datos**: PostgreSQL (SQLAlchemy + Alembic para migraciones)
-- **Auth**: Supabase Auth con email y contraseña; el backend verifica sus tokens
+- **Auth**: modo demo para el hackathon, sin comprobar credenciales: entra cualquier usuario y el backend emite un JWT propio
 - **IA**: Gemini API — **solo invocada desde el backend, nunca desde el frontend**
 - **Tiempo real**: WebSockets cuando la sala de estudio lo requiera
 - **Frontend** (ya existe, no tocar su stack): React + TypeScript + Vite + Tailwind
@@ -109,7 +109,7 @@ pulir nada:
 
 ## Estado actual del repo
 
-Implementado: acceso con Supabase Auth, perfil, matching determinista
+Implementado: acceso en modo demo, perfil, matching determinista
 y envío de solicitudes. Los modelos y las tablas de sesiones ya existen.
 
 Pendiente, en este orden: aceptar o rechazar solicitudes, sala de estudio,
