@@ -1,5 +1,4 @@
 # PeerSync
-Nuestra propuesta para Hack4Edu
 
 ## Desarrollo local
 
