@@ -1,92 +1,186 @@
 @import "tailwindcss";
 
+/*
+ * Sistema visual de Swap4Edu: un cuaderno compartido.
+ * El color tiene significado: `teach` es lo que enseñas, `learn` lo que aprendes
+ * y `guide` el apoyo de IA, deliberadamente discreto porque facilita, no sustituye.
+ */
+@theme {
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+
+  --color-paper: #faf6ee;
+  --color-surface: #fffdf9;
+  --color-ink: #22302b;
+  --color-muted: #5b6761;
+  --color-line: #e5dece;
+
+  --color-teach: #1d6b58;
+  --color-teach-strong: #14503f;
+  --color-teach-soft: #dff0e9;
+
+  --color-learn: #b4472e;
+  --color-learn-strong: #8f3621;
+  --color-learn-soft: #fbe7df;
+
+  --color-sun: #f2c14e;
+  --color-sun-ink: #7a5600;
+  --color-sun-soft: #fcf2d3;
+
+  --color-guide: #4c5a8f;
+  --color-guide-soft: #e8ebf6;
+}
+
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
   body {
-    @apply antialiased font-sans;
-    color: #F1F2FF;
-    background-color: #11152D;
-
-    background-image:
-      radial-gradient(circle 600px at 5% 10%,
-        rgba(117, 70, 245, 0.25), transparent),
-      radial-gradient(circle 600px at 95% 15%,
-        rgba(53, 200, 213, 0.16), transparent),
-      radial-gradient(circle 600px at 50% 100%,
-        rgba(190, 70, 190, 0.14), transparent);
-
-    background-attachment: fixed;
+    @apply bg-paper text-ink font-sans antialiased;
+    /* Puntos de cuaderno */
+    background-image: radial-gradient(#e6dfcf 1px, transparent 1px);
+    background-size: 22px 22px;
     min-height: 100vh;
   }
 
-  .dashboard-card {
-    background: linear-gradient(
-      145deg,
-      rgba(35, 40, 72, 0.96),
-      rgba(25, 30, 57, 0.96)
-  );
-
-    border: 1px solid rgba(167, 139, 250, 0.20);
-    border-radius: 18px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.16);
-    color: #F1F2FF;
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-semibold;
+    letter-spacing: -0.01em;
   }
 
-  .dashboard-card h1,
-  .dashboard-card h2,
-  .dashboard-card h3 {
-    color: #FFFFFF;
+  :focus-visible {
+    outline: 2px solid var(--color-teach);
+    outline-offset: 2px;
   }
 
-  .dashboard-card p {
-    color: #C1C9E0;
+  ::selection {
+    background: var(--color-sun-soft);
   }
-    
-  .app-shell {
-    min-height: 100vh;
-    background-color: #100d24;
-    background-image:
-      radial-gradient(
-        ellipse at 10% 10%,
-        rgba(124, 58, 237, 0.35),
-        transparent 45%
-      ),
-      radial-gradient(
-        ellipse at 90% 20%,
-        rgba(6, 182, 212, 0.25),
-        transparent 45%
-      ),
-      radial-gradient(
-        ellipse at 50% 90%,
-        rgba(236, 72, 153, 0.22),
-        transparent 50%
-      ),
-      linear-gradient(135deg, #100d24, #191333, #111827);
+}
 
-    background-attachment: fixed;
+@layer components {
+  .page {
+    @apply mx-auto w-full px-4 py-8 sm:px-6 lg:px-8;
+    animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .page-title {
+    @apply text-3xl text-ink sm:text-4xl;
+  }
+
+  .page-subtitle {
+    @apply mt-1.5 max-w-2xl text-base text-muted;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-surface;
+    box-shadow: 0 1px 2px rgb(34 48 43 / 0.05);
+  }
+
+  .eyebrow {
+    @apply text-xs font-extrabold tracking-wider uppercase;
+  }
+
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-colors;
+  }
+
+  .btn:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-teach text-white hover:bg-teach-strong;
+  }
+
+  .btn-secondary {
+    @apply border border-line bg-surface text-ink hover:border-teach hover:text-teach-strong;
+  }
+
+  .btn-guide {
+    @apply bg-guide text-white hover:bg-ink;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-bold text-ink;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm text-ink transition-colors;
+  }
+
+  .field::placeholder {
+    color: var(--color-muted);
+  }
+
+  .field:hover {
+    border-color: var(--color-muted);
+  }
+
+  .field:focus {
+    @apply border-teach bg-surface;
+    outline: 2px solid var(--color-teach-soft);
+    outline-offset: 0;
+  }
+
+  .chip {
+    @apply inline-block rounded-lg px-2.5 py-1 text-xs font-bold;
+  }
+
+  .chip-teach {
+    @apply bg-teach-soft text-teach-strong;
+  }
+
+  .chip-learn {
+    @apply bg-learn-soft text-learn-strong;
+  }
+
+  .chip-guide {
+    @apply bg-guide-soft text-guide;
+  }
+
+  .chip-demo {
+    @apply bg-sun-soft text-sun-ink;
+  }
+
+  .switch {
+    @apply relative h-6 w-11 shrink-0 cursor-pointer appearance-none rounded-full border border-line bg-line transition-colors;
+  }
+
+  .switch::after {
+    @apply absolute top-0.5 left-0.5 h-[18px] w-[18px] rounded-full bg-surface transition-transform;
+    content: "";
+    box-shadow: 0 1px 2px rgb(34 48 43 / 0.3);
+  }
+
+  .switch:checked {
+    @apply border-teach bg-teach;
+  }
+
+  .switch:checked::after {
+    transform: translateX(20px);
   }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.3);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.6);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

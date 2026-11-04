@@ -1,102 +1,178 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Save } from 'lucide-react';
-import { SuccessState } from '../components/UIStates';
+import { User, Mail, Save, Plus, X } from 'lucide-react';
+import { ErrorState, SuccessState } from '../components/UIStates';
+import { Avatar } from '../components/Swap';
+
+const MAX_SKILLS = 20;
+
+const SkillEditor: React.FC<{
+  id: string;
+  title: string;
+  placeholder: string;
+  tone: 'teach' | 'learn';
+  skills: string[];
+  onChange: (skills: string[]) => void;
+}> = ({ id, title, placeholder, tone, skills, onChange }) => {
+  const [draft, setDraft] = useState('');
+  const isFull = skills.length >= MAX_SKILLS;
+
+  const addDraft = () => {
+    const skill = draft.trim();
+    if (!skill || isFull) return;
+    if (!skills.some(existing => existing.toLowerCase() === skill.toLowerCase())) {
+      onChange([...skills, skill]);
+    }
+    setDraft('');
+  };
+
+  return (
+    <div className={`p-5 rounded-2xl space-y-3 ${tone === 'teach' ? 'bg-teach-soft/50' : 'bg-learn-soft/50'}`}>
+      <label htmlFor={id} className={`eyebrow block ${tone === 'teach' ? 'text-teach' : 'text-learn'}`}>{title}</label>
+      <div className="flex flex-wrap gap-1.5">
+        {skills.length === 0 && <span className="text-sm text-muted">Aún no hay ninguna.</span>}
+        {skills.map(skill => (
+          <span key={skill} className={`chip chip-${tone} inline-flex items-center gap-1`}>
+            {skill}
+            <button
+              type="button"
+              onClick={() => onChange(skills.filter(s => s !== skill))}
+              aria-label={`Quitar ${skill}`}
+              className="cursor-pointer rounded hover:opacity-60"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="text"
+          value={draft}
+          maxLength={100}
+          disabled={isFull}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addDraft();
+            }
+          }}
+          placeholder={isFull ? `Máximo ${MAX_SKILLS} habilidades` : placeholder}
+          className="field bg-surface flex-1 min-w-0"
+        />
+        <button type="button" onClick={addDraft} disabled={isFull} aria-label={`Añadir a ${title}`} className="btn btn-secondary px-3! shrink-0">
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const MyProfile: React.FC = () => {
   const { user, updateProfile } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const [skillsOffering, setSkillsOffering] = useState(user?.skillsOffering ?? []);
+  const [skillsSeeking, setSkillsSeeking] = useState(user?.skillsSeeking ?? []);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile({ name, bio });
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 3000);
+    setError('');
+    setSuccess(false);
+    setSaving(true);
+    try {
+      await updateProfile({ name, bio, skillsOffering, skillsSeeking });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudieron guardar los cambios.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="page max-w-4xl space-y-8">
       <div>
-        <h1 className="text-2xl font-black text-slate-900">Mi Perfil</h1>
-        <p className="text-sm text-slate-500">Administra tu información personal y tus habilidades de intercambio</p>
+        <h1 className="page-title">Mi perfil</h1>
+        <p className="page-subtitle">Cuéntale a tus compañeros quién eres, qué puedes enseñar y qué quieres aprender.</p>
       </div>
 
       {success && (
         <SuccessState title="Perfil actualizado" message="Los cambios se han guardado exitosamente." />
       )}
+      {error && <ErrorState message={error} />}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-200 p-8 shadow-xs space-y-6">
-        <div className="flex items-center space-x-4 border-b border-slate-100 pb-6">
-          <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-2xl flex items-center justify-center text-2xl font-black shadow-lg shadow-indigo-200">
-            {name.charAt(0) || 'U'}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">{name}</h2>
-            <p className="text-sm text-slate-500 flex items-center space-x-1 mt-0.5">
-              <Mail className="w-4 h-4 text-slate-400" />
-              <span>{user?.email}</span>
+      <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6">
+        <div className="flex items-center gap-4 border-b border-line pb-6 min-w-0">
+          <Avatar name={name} className="w-20 h-20 text-3xl" />
+          <div className="min-w-0">
+            <h2 className="text-2xl text-ink truncate">{name}</h2>
+            <p className="text-sm text-muted flex items-center gap-1.5 mt-0.5 min-w-0">
+              <Mail className="w-4 h-4 shrink-0" />
+              <span className="truncate">{user?.email}</span>
             </p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre completo</label>
+            <label htmlFor="name" className="label">Nombre completo</label>
             <div className="relative">
-              <User className="w-5 h-5 text-slate-400 absolute left-3 top-3" />
+              <User className="w-4 h-4 text-muted absolute left-3.5 top-3.5" />
               <input
+                id="name"
                 type="text"
+                required
+                maxLength={100}
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="field pl-10"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Biografía / Descripción</label>
+            <label htmlFor="bio" className="label">Biografía / Descripción</label>
             <textarea
+              id="bio"
               rows={4}
+              maxLength={1000}
               value={bio}
               onChange={e => setBio(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="field"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-2">
-            <h4 className="text-sm font-bold text-indigo-900">Habilidades que Ofreces</h4>
-            <div className="flex flex-wrap gap-2">
-              {user?.skillsOffering?.map(s => (
-                <span key={s} className="px-3 py-1 bg-white text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200">
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-5 bg-violet-50/50 border border-violet-100 rounded-2xl space-y-2">
-            <h4 className="text-sm font-bold text-violet-900">Habilidades que Buscas</h4>
-            <div className="flex flex-wrap gap-2">
-              {user?.skillsSeeking?.map(s => (
-                <span key={s} className="px-3 py-1 bg-white text-violet-700 text-xs font-semibold rounded-lg border border-violet-200">
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SkillEditor
+            id="skills-offering"
+            title="Habilidades que ofreces"
+            placeholder="Ej.: Python"
+            tone="teach"
+            skills={skillsOffering}
+            onChange={setSkillsOffering}
+          />
+          <SkillEditor
+            id="skills-seeking"
+            title="Habilidades que buscas"
+            placeholder="Ej.: Estadística"
+            tone="learn"
+            skills={skillsSeeking}
+            onChange={setSkillsSeeking}
+          />
         </div>
 
-        <div className="pt-4 flex justify-end">
-          <button
-            type="submit"
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-md shadow-indigo-200 transition flex items-center space-x-2"
-          >
+        <div className="flex justify-end">
+          <button type="submit" disabled={saving} className="btn btn-primary">
             <Save className="w-4 h-4" />
-            <span>Guardar Cambios</span>
+            <span>{saving ? 'Guardando...' : 'Guardar cambios'}</span>
           </button>
         </div>
       </form>

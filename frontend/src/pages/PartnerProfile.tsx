@@ -1,101 +1,136 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, BookOpen, CheckCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Star } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { fetchPartner, sendMatchRequest, type Partner } from '../services/matching';
+import { ErrorState, LoadingState, SuccessState } from '../components/UIStates';
+import { Avatar, SkillList } from '../components/Swap';
+import { ConnectButton } from '../components/ConnectButton';
+import { MatchReasons } from '../components/MatchReasons';
+
+const errorMessage = (err: unknown) => (err instanceof Error ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.');
 
 export const PartnerProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const [partner, setPartner] = useState<Partner | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [sending, setSending] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [sent, setSent] = useState(false);
 
-  // Demo partner lookup
-  const partner = {
-    id: id || 'p-1',
-    name: 'María González',
-    email: 'maria.gonzalez@hack4edu.org',
-    bio: 'Estudiante de Ciencia de Datos en la Universidad Tecnológica. Apasionada por el análisis de datos, Python, Pandas y Machine Learning. Buscando dominar React y arquitecturas frontend modernas.',
-    skillsOffering: ['Python', 'Machine Learning', 'Pandas', 'SQL', 'Estadística'],
-    skillsSeeking: ['React', 'TypeScript', 'Tailwind CSS'],
-    reputation: 4.9,
-    completedSessions: 16
+  useEffect(() => {
+    if (!token || !id) return;
+    let cancelled = false;
+    fetchPartner(token, id)
+      .then(result => {
+        if (!cancelled) setPartner(result);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setLoadError(errorMessage(err));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, id, attempt]);
+
+  const retry = () => {
+    setLoading(true);
+    setLoadError('');
+    setAttempt(current => current + 1);
+  };
+
+  const handleSendRequest = async () => {
+    if (!token || !partner) return;
+    setSending(true);
+    setActionError('');
+    try {
+      await sendMatchRequest(token, partner.id);
+      setPartner({ ...partner, requestStatus: 'sent' });
+      setSent(true);
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="page max-w-4xl space-y-6">
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex items-center space-x-2 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition"
+        className="inline-flex items-center gap-2 text-sm font-bold text-muted hover:text-teach-strong transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Volver</span>
       </button>
 
-      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-2xl flex items-center justify-center text-2xl font-black shadow-lg shadow-indigo-200">
-              {partner.name.charAt(0)}
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-slate-900">{partner.name}</h1>
-              <p className="text-sm text-slate-500 flex items-center space-x-2 mt-1">
-                <Mail className="w-4 h-4 text-slate-400" />
-                <span>{partner.email}</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-center">
-              <span className="block text-xs font-semibold text-amber-600 uppercase">Reputación</span>
-              <span className="text-lg font-black text-amber-900">⭐ {partner.reputation}</span>
-            </div>
-            <div className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-xl text-center">
-              <span className="block text-xs font-semibold text-indigo-600 uppercase">Sesiones</span>
-              <span className="text-lg font-black text-indigo-900 flex items-center justify-center space-x-1">
-                <BookOpen className="w-4 h-4 inline mr-1" />
-                <span>{partner.completedSessions}</span>
-              </span>
-            </div>
-          </div>
-        </div>
+      {loading && <LoadingState message="Cargando perfil..." />}
+      {!loading && loadError && <ErrorState message={loadError} onRetry={retry} />}
 
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Acerca de</h3>
-          <p className="text-sm text-slate-600 leading-relaxed">{partner.bio}</p>
-        </div>
+      {sent && partner && (
+        <SuccessState title="Solicitud enviada" message={`Tu solicitud le ha llegado a ${partner.name}.`} onDismiss={() => setSent(false)} />
+      )}
+      {actionError && <ErrorState message={actionError} />}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-          <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-3">
-            <h4 className="text-sm font-bold text-indigo-900 uppercase tracking-wider">Habilidades que enseña</h4>
-            <div className="flex flex-wrap gap-2">
-              {partner.skillsOffering.map(s => (
-                <span key={s} className="px-3 py-1 bg-white text-indigo-700 text-xs font-semibold rounded-lg shadow-xs border border-indigo-200">
-                  {s}
-                </span>
-              ))}
+      {!loading && !loadError && partner && (
+        <div className="card p-6 sm:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 border-b border-line pb-6">
+            <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+              <Avatar name={partner.name} tone="learn" className="w-20 h-20 text-3xl" />
+              <h1 className="page-title min-w-0 break-words">{partner.name}</h1>
             </div>
+            <dl className="flex items-center gap-6 shrink-0">
+              <div>
+                <dt className="text-xs text-muted">Afinidad</dt>
+                <dd className="font-display text-2xl font-semibold text-teach-strong">{partner.score}%</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted">Reputación</dt>
+                <dd className="font-display text-2xl font-semibold flex items-center gap-1.5">
+                  <Star className="w-4 h-4 fill-sun text-sun" />
+                  <span>{partner.reputation?.toFixed(1) ?? 'Nuevo'}</span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted">Sesiones</dt>
+                <dd className="font-display text-2xl font-semibold flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-teach" />
+                  <span>{partner.completedSessions}</span>
+                </dd>
+              </div>
+            </dl>
           </div>
 
-          <div className="p-5 bg-violet-50/50 border border-violet-100 rounded-2xl space-y-3">
-            <h4 className="text-sm font-bold text-violet-900 uppercase tracking-wider">Habilidades que busca</h4>
-            <div className="flex flex-wrap gap-2">
-              {partner.skillsSeeking.map(s => (
-                <span key={s} className="px-3 py-1 bg-white text-violet-700 text-xs font-semibold rounded-lg shadow-xs border border-violet-200">
-                  {s}
-                </span>
-              ))}
+          {partner.bio && (
+            <div className="space-y-2">
+              <h2 className="text-xl text-ink">Acerca de</h2>
+              <p className="text-muted leading-relaxed whitespace-pre-line">{partner.bio}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-5 bg-learn-soft/50 rounded-2xl">
+              <SkillList title="Habilidades que enseña" skills={partner.skillsOffering} tone="learn" />
+            </div>
+            <div className="p-5 bg-teach-soft/50 rounded-2xl">
+              <SkillList title="Habilidades que busca" skills={partner.skillsSeeking} tone="teach" />
             </div>
           </div>
-        </div>
 
-        <div className="pt-4 flex justify-end">
-          <button
-            onClick={() => alert(`Solicitud enviada a ${partner.name}`)}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-md shadow-indigo-200 transition flex items-center space-x-2"
-          >
-            <CheckCircle className="w-4 h-4" />
-            <span>Enviar solicitud de intercambio</span>
-          </button>
+          <MatchReasons partner={partner} />
+
+          <div className="flex justify-end">
+            <ConnectButton status={partner.requestStatus} sending={sending} onConnect={handleSendRequest} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

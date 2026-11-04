@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
+import { LoadingState } from './components/UIStates';
 
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -16,12 +17,15 @@ import { MyProfile } from './pages/MyProfile';
 import { Settings } from './pages/Settings';
 
 const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) {
+    return <LoadingState message="Recuperando tu sesión..." />;
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   return (
-    <div className="app-shell min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">{children}</main>
     </div>

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { ApiError, apiRequest } from '../services/api';
 
 export interface User {
   id: string;
@@ -7,86 +8,104 @@ export interface User {
   bio: string;
   skillsOffering: string[];
   skillsSeeking: string[];
-  reputation: number;
+  /** null hasta recibir la primera valoración de un compañero. */
+  reputation: number | null;
   completedSessions: number;
 }
 
+export type ProfileChanges = Partial<Pick<User, 'name' | 'bio' | 'skillsOffering' | 'skillsSeeking'>>;
+
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, pass: string) => Promise<boolean>;
-  register: (name: string, email: string, pass: string) => Promise<boolean>;
+  /** true mientras se recupera la sesión guardada al abrir la app. */
+  isLoading: boolean;
+  login: (email: string, pass: string) => Promise<void>;
+  register: (name: string, email: string, pass: string) => Promise<void>;
   logout: () => void;
-  updateProfile: (updatedData: Partial<User>) => void;
+  updateProfile: (changes: ProfileChanges) => Promise<void>;
 }
+
+const TOKEN_KEY = 'swap4edu_token';
+const PROFILE_PATH = '/profiles/me';
+
+const readToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const writeToken = (token: string | null) => {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Sin almacenamiento la sesión dura hasta recargar la página.
+  }
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('skillswap_user');
-    if (saved) {
-      try { return JSON.parse(saved); } catch { return null; }
-    }
-    // Default demo user for seamless evaluation
-    return {
-      id: 'u-1',
-      name: 'Alex Developer',
-      email: 'alex@hack4edu.org',
-      bio: 'Estudiante de Ingeniería de Software apasionado por React, Python y Algoritmos.',
-      skillsOffering: ['React', 'TypeScript', 'Python'],
-      skillsSeeking: ['Machine Learning', 'PostgreSQL', 'Docker'],
-      reputation: 4.9,
-      completedSessions: 12
-    };
-  });
+  const [token, setToken] = useState<string | null>(readToken);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(() => readToken() !== null);
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('skillswap_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('skillswap_user');
-    }
-  }, [user]);
-
-  const login = async (email: string, _pass: string): Promise<boolean> => {
-    setUser({
-      id: 'u-1',
-      name: email.split('@')[0] || 'Estudiante Swap4Edu',
-      email,
-      bio: 'Apasionado por el aprendizaje colaborativo e inteligencia artificial.',
-      skillsOffering: ['React', 'JavaScript'],
-      skillsSeeking: ['Python', 'FastAPI'],
-      reputation: 4.8,
-      completedSessions: 8
-    });
-    return true;
-  };
-
-  const register = async (name: string, email: string, _pass: string): Promise<boolean> => {
-    setUser({
-      id: 'u-' + Date.now(),
-      name,
-      email,
-      bio: 'Nuevo miembro en Swap4Edu.',
-      skillsOffering: ['TypeScript'],
-      skillsSeeking: ['React'],
-      reputation: 5.0,
-      completedSessions: 0
-    });
-    return true;
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
+    writeToken(null);
+    setToken(null);
     setUser(null);
+  }, []);
+
+  // Recupera la sesión guardada. Si el servidor no responde se conserva el token,
+  // para no cerrar la sesión por un fallo temporal.
+  useEffect(() => {
+    const savedToken = readToken();
+    if (!savedToken) return;
+    let cancelled = false;
+    apiRequest<User>(PROFILE_PATH, { token: savedToken })
+      .then(profile => {
+        if (!cancelled) setUser(profile);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled && error instanceof ApiError && error.status === 401) logout();
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [logout]);
+
+  const startSession = async (path: string, body: object) => {
+    const { access_token: newToken } = await apiRequest<{ access_token: string }>(path, { method: 'POST', body });
+    const profile = await apiRequest<User>(PROFILE_PATH, { token: newToken });
+    writeToken(newToken);
+    setToken(newToken);
+    setUser(profile);
   };
 
-  const updateProfile = (updatedData: Partial<User>) => {
-    setUser(prev => prev ? { ...prev, ...updatedData } : null);
+  const login = (email: string, pass: string) => startSession('/auth/login', { email, password: pass });
+
+  const register = (name: string, email: string, pass: string) =>
+    startSession('/auth/register', { name, email, password: pass });
+
+  const updateProfile = async (changes: ProfileChanges) => {
+    try {
+      const profile = await apiRequest<User>(PROFILE_PATH, { method: 'PATCH', body: changes, token: token ?? undefined });
+      setUser(profile);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) logout();
+      throw error;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, isLoading, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

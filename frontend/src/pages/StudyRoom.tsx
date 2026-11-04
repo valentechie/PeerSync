@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, Sparkles, CheckCircle2, Award, Flag } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Send, Lightbulb, CheckCircle2, MessageSquareQuote, MessageCircle, Flag } from 'lucide-react';
+import { Avatar } from '../components/Swap';
 
 interface Message {
   id: string;
@@ -12,11 +14,13 @@ interface Message {
 export const StudyRoom: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const me = user?.name ?? 'Tú';
 
   const [objective, setObjective] = useState('Dominar hooks avanzados de React y optimización con useCallback');
   const [messages, setMessages] = useState<Message[]>([
     { id: 'm-1', sender: 'María González', text: '¡Hola! ¿Listos para comenzar con el intercambio?', time: '18:00' },
-    { id: 'm-2', sender: 'Alex Developer', text: '¡Hola María! Sí, tengo listo el ejemplo de código con custom hooks.', time: '18:01' }
+    { id: 'm-2', sender: me, text: '¡Hola María! Sí, tengo listo el ejemplo de código con custom hooks.', time: '18:01' }
   ]);
   const [inputText, setInputText] = useState('');
 
@@ -34,7 +38,7 @@ export const StudyRoom: React.FC = () => {
     if (!inputText.trim()) return;
     setMessages(prev => [...prev, {
       id: String(Date.now()),
-      sender: 'Alex Developer',
+      sender: me,
       text: inputText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }]);
@@ -74,142 +78,153 @@ export const StudyRoom: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="page max-w-7xl space-y-6">
       {/* Top Bar with Objective and Finish Button */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-md">Sala Activa</span>
-            <span className="text-xs text-slate-400">ID: {id || 'session-1'}</span>
+      <div className="card p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="chip chip-teach">Sala activa</span>
+            <span className="text-xs text-muted">ID: {id || 'session-1'}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Flag className="w-4 h-4 text-indigo-600 shrink-0" />
+          <div className="flex items-center gap-2">
+            <Flag className="w-4 h-4 text-teach shrink-0" />
             <input
               type="text"
               value={objective}
               onChange={e => setObjective(e.target.value)}
-              className="text-lg font-bold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none w-full sm:w-auto"
+              aria-label="Objetivo de la sesión"
+              className="font-display text-lg sm:text-xl font-semibold text-ink bg-transparent border-b border-transparent hover:border-line focus:border-teach focus:outline-none w-full"
             />
           </div>
         </div>
-        <button
-          onClick={handleEndSession}
-          className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl shadow-sm transition shrink-0"
-        >
-          Finalizar Sesión
+        <button onClick={handleEndSession} className="btn btn-secondary shrink-0 hover:border-learn! hover:text-learn-strong!">
+          Finalizar sesión
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chat Section (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 flex flex-col h-[600px] shadow-xs">
-          <div className="p-4 border-b border-slate-100 font-bold text-slate-900">
-            💬 Chat en vivo de la Sala
-          </div>
-          
+        <section className="card lg:col-span-2 flex flex-col h-[600px]">
+          <h2 className="p-4 border-b border-line text-lg text-ink flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-teach" />
+            <span>Conversación con tu compañero</span>
+            <span className="chip chip-demo font-sans ml-auto">Demo</span>
+          </h2>
+
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map(m => (
-              <div key={m.id} className="flex flex-col space-y-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold text-slate-900">{m.sender}</span>
-                  <span className="text-[10px] text-slate-400">{m.time}</span>
+            {messages.map(m => {
+              const mine = m.sender === me;
+              return (
+                <div key={m.id} className={`flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
+                  <Avatar name={m.sender} tone={mine ? 'teach' : 'learn'} className="w-8 h-8 text-sm" />
+                  <div className={`max-w-[80%] space-y-1 ${mine ? 'text-right' : ''}`}>
+                    <div className="flex items-baseline gap-2 text-xs justify-[inherit]">
+                      <span className="font-bold">{m.sender}</span>
+                      <span className="text-muted">{m.time}</span>
+                    </div>
+                    <div className={`inline-block text-left px-3.5 py-2.5 rounded-2xl text-sm ${mine ? 'bg-teach-soft rounded-br-sm' : 'bg-learn-soft rounded-bl-sm'}`}>
+                      {m.text}
+                    </div>
+                  </div>
                 </div>
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 max-w-lg">
-                  {m.text}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-100 flex items-center space-x-2">
+          <form onSubmit={handleSendMessage} className="p-4 border-t border-line flex items-center gap-2">
             <input
               type="text"
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               placeholder="Escribe un mensaje o comparte código..."
-              className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label="Mensaje"
+              className="field flex-1"
             />
-            <button
-              type="submit"
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition flex items-center space-x-1"
-            >
+            <button type="submit" aria-label="Enviar mensaje" className="btn btn-primary px-4!">
               <Send className="w-4 h-4" />
             </button>
           </form>
-        </div>
+        </section>
 
         {/* AI Assistants Sidebar (1 col) */}
-        <div className="space-y-6">
+        <aside className="space-y-6" aria-label="Apoyo de IA">
           {/* StudyMind AI */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-violet-900 flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-violet-600" />
-                <span>StudyMind AI (Pistas)</span>
+          <section className="card p-5 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-lg text-ink flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-guide" />
+                <span>StudyMind AI</span>
               </h3>
-              <span className="text-xs text-slate-400">Bajo demanda</span>
+              <span className="chip chip-demo">Demo</span>
             </div>
-            <p className="text-xs text-slate-600">¿Bloqueado en algún concepto? Pide pistas progresivas paso a paso.</p>
+            <p className="text-sm text-muted">¿Bloqueado en algún concepto? Pide pistas progresivas paso a paso, solo cuando las necesites.</p>
+
+            <div className="flex gap-1.5" role="img" aria-label={`${hints.length} de 3 pistas usadas`}>
+              {[0, 1, 2].map(i => (
+                <span key={i} className={`h-1.5 flex-1 rounded-full ${i < hints.length ? 'bg-guide' : 'bg-guide-soft'}`} />
+              ))}
+            </div>
 
             <button
               onClick={handleRequestHint}
               disabled={loadingHint || hints.length >= 3}
-              className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white font-semibold text-xs rounded-xl shadow-sm transition"
+              className="btn btn-guide w-full"
             >
-              {loadingHint ? 'Generando pista...' : hints.length === 0 ? 'Solicitar Pista 1' : hints.length === 1 ? 'Solicitar Pista 2' : hints.length === 2 ? 'Solicitar Pista 3' : 'Máximo de pistas alcanzado'}
+              {loadingHint ? 'Generando pista...' : hints.length === 0 ? 'Solicitar pista 1' : hints.length === 1 ? 'Solicitar pista 2' : hints.length === 2 ? 'Solicitar pista 3' : 'Máximo de pistas alcanzado'}
             </button>
 
             {hints.length > 0 && (
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2">
                 {hints.map((h, i) => (
-                  <div key={i} className="p-3 bg-violet-50 border border-violet-100 rounded-xl text-xs text-violet-900">
+                  <div key={i} className="p-3 bg-guide-soft rounded-xl text-sm">
                     {h}
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
           {/* TeachBack AI */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-emerald-900 flex items-center space-x-2">
-                <Award className="w-4 h-4 text-emerald-600" />
-                <span>TeachBack AI (Feedback)</span>
+          <section className="card p-5 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-lg text-ink flex items-center gap-2">
+                <MessageSquareQuote className="w-5 h-5 text-guide" />
+                <span>TeachBack AI</span>
               </h3>
-              <span className="text-xs text-slate-400">Formativo</span>
+              <span className="chip chip-demo">Demo</span>
             </div>
-            <p className="text-xs text-slate-600">Explica el concepto con tus propias palabras para recibir feedback formativo.</p>
+            <p className="text-sm text-muted">Explica el concepto con tus propias palabras para recibir feedback formativo.</p>
 
             <textarea
               rows={3}
               value={explanation}
               onChange={e => setExplanation(e.target.value)}
               placeholder="Explica el concepto aquí..."
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              aria-label="Tu explicación del concepto"
+              className="field"
             />
 
             <button
               onClick={handleTeachBackEval}
               disabled={loadingTeachBack || !explanation.trim()}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold text-xs rounded-xl shadow-sm transition"
+              className="btn btn-guide w-full"
             >
               {loadingTeachBack ? 'Evaluando explicación...' : 'Evaluar con TeachBack'}
             </button>
 
             {feedback && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 text-xs">
-                <div className="font-bold text-emerald-900 flex items-center space-x-1">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 inline" />
+              <div className="p-3 bg-guide-soft rounded-xl space-y-2 text-sm">
+                <div className="font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-guide shrink-0" />
                   <span>{feedback.score}</span>
                 </div>
-                <p className="text-emerald-800"><strong>Claridad:</strong> {feedback.clarity}</p>
-                <p className="text-emerald-800"><strong>Corrección:</strong> {feedback.correction}</p>
-                <p className="text-emerald-800"><strong>Recomendación:</strong> {feedback.tips}</p>
+                <p><strong>Claridad:</strong> {feedback.clarity}</p>
+                <p><strong>Corrección:</strong> {feedback.correction}</p>
+                <p><strong>Recomendación:</strong> {feedback.tips}</p>
               </div>
             )}
-          </div>
-        </div>
+          </section>
+        </aside>
       </div>
     </div>
   );

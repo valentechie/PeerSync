@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Clock, ArrowRight } from 'lucide-react';
+import { Avatar, SwapTopic } from '../components/Swap';
 
 interface SessionItem {
   id: string;
@@ -38,53 +39,52 @@ export const MySessions: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="page max-w-5xl space-y-8">
       <div>
-        <h1 className="text-2xl font-black text-slate-900">Mis Sesiones</h1>
-        <p className="text-sm text-slate-500">Historial de intercambios de conocimiento y salas de estudio activas</p>
+        <h1 className="page-title flex items-center gap-3">
+          <span>Mis sesiones</span>
+          <span className="chip chip-demo font-sans">Demo</span>
+        </h1>
+        <p className="page-subtitle">Historial de intercambios de conocimiento y salas de estudio activas.</p>
       </div>
 
       <div className="space-y-4">
         {MOCK_SESSIONS.map(session => (
-          <div key={session.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-3">
-                <span className={`px-2.5 py-0.5 text-xs font-bold rounded-md ${
-                  session.status === 'upcoming' 
-                    ? 'bg-indigo-100 text-indigo-700' 
-                    : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {session.status === 'upcoming' ? 'Próxima' : 'Completada'}
-                </span>
-                <span className="text-xs text-slate-400 flex items-center space-x-1">
-                  <Clock className="w-3.5 h-3.5 inline mr-1" />
-                  <span>{session.time}</span>
-                </span>
+          <article
+            key={session.id}
+            className={`card p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 ${session.status === 'upcoming' ? 'border-l-4 border-l-teach' : ''}`}
+          >
+            <div className="flex items-start gap-4">
+              <Avatar name={session.partnerName} tone="learn" />
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className={`chip ${session.status === 'upcoming' ? 'chip-teach' : 'bg-line/60 text-muted'}`}>
+                    {session.status === 'upcoming' ? 'Próxima' : 'Completada'}
+                  </span>
+                  <span className="text-sm text-muted flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{session.time}</span>
+                  </span>
+                </div>
+                <h2 className="font-sans text-base sm:text-lg font-bold tracking-normal"><SwapTopic topic={session.topic} /></h2>
+                <p className="text-sm text-muted">Compañero: <span className="font-bold text-ink">{session.partnerName}</span></p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mt-1">{session.topic}</h3>
-              <p className="text-sm text-slate-600">Compañero: <span className="font-semibold">{session.partnerName}</span></p>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="shrink-0">
               {session.status === 'upcoming' ? (
-                <button
-                  onClick={() => navigate(`/study-room/${session.id}`)}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-sm transition flex items-center space-x-2"
-                >
-                  <span>Entrar a la Sala</span>
+                <button onClick={() => navigate(`/study-room/${session.id}`)} className="btn btn-primary">
+                  <span>Entrar a la sala</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
-                <button
-                  onClick={() => navigate(`/session-summary/${session.id}`)}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition flex items-center space-x-2"
-                >
+                <button onClick={() => navigate(`/session-summary/${session.id}`)} className="btn btn-secondary">
                   <BookOpen className="w-4 h-4" />
-                  <span>Ver Resumen</span>
+                  <span>Ver resumen</span>
                 </button>
               )}
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </div>
