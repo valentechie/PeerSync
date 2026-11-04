@@ -1,1 +1,2 @@
-# hack4edu
+# PeerSync
+Nuestra propuesta para Hack4Edu
