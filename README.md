@@ -22,7 +22,7 @@ npm run dev
 2. Añade la variable de entorno `DATABASE_URL`, con la cadena **Transaction pooler** de Supabase (puerto `6543`). La URL del proyecto y la clave publicable son públicas y ya vienen por defecto en el código.
 3. En Supabase, entra en **Authentication → URL Configuration** y pon el dominio de producción en **Site URL** y `https://TU-DOMINIO/login` en **Redirect URLs**. Añade también `http://localhost:5173/login` para desarrollo.
 
-Supabase exige confirmar el correo al registrarse, y su servidor de correo integrado admite muy pocos envíos por hora. Para producción, configura un SMTP propio o desactiva **Confirm email** en **Authentication → Sign In / Providers**.
+Supabase exige confirmar el correo al registrarse, y su servidor de correo integrado admite muy pocos envíos por hora. Para producción, configura un SMTP propio o desactiva **Confirm email** en **Authentication → Sign In / Providers**
 
 Las migraciones no se ejecutan al desplegar. Lánzalas en local antes de publicar un cambio de esquema, con la conexión directa o el pooler de sesión (puerto `5432`):
 
