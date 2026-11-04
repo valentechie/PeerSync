@@ -6,8 +6,19 @@ export interface Person {
   id: string;
   name: string;
   bio: string;
+  study: string | null;
   sharedInterests: string[];
   friendStatus: FriendStatus;
+}
+
+export interface StudyMatch extends Person {
+  matchType: 'direct' | 'similar';
+  matchReason: string;
+}
+
+export interface StudyFamily {
+  name: string;
+  studies: { code: string; label: string }[];
 }
 
 export interface Friend extends Person {
@@ -35,3 +46,7 @@ export const searchPeople = (token: string, search: string) =>
   apiRequest<Person[]>(`/people?search=${encodeURIComponent(search)}`, { token });
 
 export const fetchSameInterests = (token: string) => apiRequest<Person[]>('/people/same-interests', { token });
+
+export const fetchStudyMatches = (token: string) => apiRequest<StudyMatch[]>('/people/study-matches', { token });
+
+export const fetchStudies = (token: string) => apiRequest<StudyFamily[]>('/studies', { token });

@@ -6,10 +6,12 @@ export interface User {
   name: string;
   email: string;
   bio: string;
+  studyCode: string | null;
+  study: string | null;
   skillsSeeking: string[];
 }
 
-export type ProfileChanges = Partial<Pick<User, 'name' | 'bio' | 'skillsSeeking'>>;
+export type ProfileChanges = Partial<Pick<User, 'name' | 'bio' | 'studyCode' | 'skillsSeeking'>>;
 
 interface AuthContextType {
   user: User | null;

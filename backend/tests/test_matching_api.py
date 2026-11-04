@@ -114,7 +114,7 @@ def test_better_reputation_breaks_equal_complementarity(client, student):
         study = StudySession(match_id=request.id)
         db.add(study)
         db.flush()
-        db.add(SessionReview(session_id=study.id, reviewer_id=UUID(reviewer), reviewee_id=UUID(reviewed), rating=5))
+        db.add(SessionReview(session_id=study.id, reviewer_id=UUID(reviewer), reviewee_id=UUID(reviewed), rating=5, clarity=5, listening=5, preparation=5))
         db.commit()
 
     assert _names(client.get(SUGGESTIONS, headers=me)) == ["Valorada", "Aaa nueva"]

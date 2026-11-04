@@ -96,7 +96,10 @@ export const Friends: React.FC = () => {
               <li key={person.id} className="flex items-center justify-between gap-3 py-3 min-w-0">
                 <span className="flex items-center gap-3 min-w-0">
                   <Avatar name={person.name} className="w-10 h-10 text-base" />
-                  <span className="font-bold truncate">{person.name}</span>
+                  <span className="min-w-0">
+                    <span className="block font-bold truncate">{person.name}</span>
+                    {person.study && <span className="block text-xs text-muted truncate">{person.study}</span>}
+                  </span>
                 </span>
                 <FriendButton
                   personId={person.id}
@@ -157,7 +160,7 @@ export const Friends: React.FC = () => {
                   <Avatar name={friend.name} className="w-12 h-12 text-xl" />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-lg text-ink truncate">{friend.name}</h3>
-                    {friend.bio && <p className="text-sm text-muted truncate">{friend.bio}</p>}
+                    {friend.study && <p className="text-sm text-muted truncate">{friend.study}</p>}
                   </div>
                   <button
                     onClick={() => remove(friend.id)}

@@ -1,16 +1,28 @@
-import React, { useState } from 'react';
-import { Mail, Save, User as UserIcon } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { GraduationCap, Mail, Save, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { errorMessage } from '../services/api';
+import { fetchStudies, type StudyFamily } from '../services/people';
 import { ErrorState, SuccessState } from '../components/UIStates';
 import { Avatar } from '../components/Swap';
+import { FeedbackSection } from '../components/FeedbackSection';
 
 export const MyProfile: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { token, user, updateProfile } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const [studyCode, setStudyCode] = useState(user?.studyCode ?? '');
+  const [families, setFamilies] = useState<StudyFamily[] | null>(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchStudies(token)
+      .then(setFamilies)
+      .catch((err: unknown) => setError(errorMessage(err)));
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +30,8 @@ export const MyProfile: React.FC = () => {
     setSuccess(false);
     setSaving(true);
     try {
-      await updateProfile({ name, bio });
+      // Sin catálogo cargado no se envía el estudio, para no borrar el que ya tiene.
+      await updateProfile(families ? { name, bio, studyCode: studyCode || null } : { name, bio });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
@@ -66,6 +79,33 @@ export const MyProfile: React.FC = () => {
         </div>
 
         <div>
+          <label htmlFor="study" className="label">¿Qué estudias?</label>
+          <div className="relative">
+            <GraduationCap className="w-4 h-4 text-muted absolute left-3.5 top-3.5 pointer-events-none" aria-hidden="true" />
+            <select
+              id="study"
+              value={studyCode}
+              onChange={e => setStudyCode(e.target.value)}
+              disabled={!families}
+              aria-describedby="study-help"
+              className="field pl-10 cursor-pointer"
+            >
+              <option value="">{families ? 'Elige tus estudios' : 'Cargando estudios...'}</option>
+              {families?.map(family => (
+                <optgroup key={family.name} label={family.name}>
+                  {family.studies.map(study => (
+                    <option key={study.code} value={study.code}>{study.label}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          <p id="study-help" className="text-xs text-muted mt-1.5">
+            Te relacionamos con quien estudia lo mismo o algo parecido. Si no aparece el tuyo, elige "Otros estudios" de tu área.
+          </p>
+        </div>
+
+        <div>
           <label htmlFor="bio" className="label">Sobre ti</label>
           <textarea
             id="bio"
@@ -85,6 +125,8 @@ export const MyProfile: React.FC = () => {
           </button>
         </div>
       </form>
+
+      <FeedbackSection />
     </div>
   );
 };

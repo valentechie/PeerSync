@@ -263,5 +263,100 @@ ALTER TABLE users DROP COLUMN google_sub;
 
 UPDATE alembic_version SET version_num='0005' WHERE alembic_version.version_num = '0004';
 
+-- Running upgrade 0005 -> 0006
+
+ALTER TABLE study_sessions ALTER COLUMN match_id DROP NOT NULL;
+
+ALTER TABLE study_sessions ADD COLUMN title VARCHAR(120) DEFAULT '' NOT NULL;
+
+ALTER TABLE study_sessions ALTER COLUMN title DROP DEFAULT;
+
+ALTER TABLE study_sessions ADD COLUMN created_by_id UUID;
+
+ALTER TABLE study_sessions ADD CONSTRAINT fk_study_sessions_created_by_id_users FOREIGN KEY(created_by_id) REFERENCES users (id) ON DELETE CASCADE;
+
+CREATE TABLE session_participants (
+    session_id UUID NOT NULL, 
+    user_id UUID NOT NULL, 
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+    CONSTRAINT pk_session_participants PRIMARY KEY (session_id, user_id), 
+    CONSTRAINT fk_session_participants_session_id_study_sessions FOREIGN KEY(session_id) REFERENCES study_sessions (id) ON DELETE CASCADE, 
+    CONSTRAINT fk_session_participants_user_id_users FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_session_participants_user_id ON session_participants (user_id);
+
+ALTER TABLE session_participants ENABLE ROW LEVEL SECURITY;
+
+UPDATE alembic_version SET version_num='0006' WHERE alembic_version.version_num = '0005';
+
+-- Running upgrade 0006 -> 0007
+
+CREATE TABLE friendships (
+    user_a_id UUID NOT NULL, 
+    user_b_id UUID NOT NULL, 
+    requester_id UUID NOT NULL, 
+    status VARCHAR(20) NOT NULL, 
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+    CONSTRAINT pk_friendships PRIMARY KEY (user_a_id, user_b_id), 
+    CONSTRAINT ck_friendships_friendship_status CHECK (status IN ('pending', 'accepted')), 
+    CONSTRAINT ck_friendships_not_self CHECK (user_a_id <> user_b_id), 
+    CONSTRAINT fk_friendships_user_a_id_users FOREIGN KEY(user_a_id) REFERENCES users (id) ON DELETE CASCADE, 
+    CONSTRAINT fk_friendships_user_b_id_users FOREIGN KEY(user_b_id) REFERENCES users (id) ON DELETE CASCADE, 
+    CONSTRAINT fk_friendships_requester_id_users FOREIGN KEY(requester_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_friendships_user_b_id ON friendships (user_b_id);
+
+ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
+
+UPDATE alembic_version SET version_num='0007' WHERE alembic_version.version_num = '0006';
+
+-- Running upgrade 0007 -> 0008
+
+ALTER TABLE profiles ADD COLUMN study_code VARCHAR(60);
+
+CREATE INDEX ix_profiles_study_code ON profiles (study_code);
+
+UPDATE alembic_version SET version_num='0008' WHERE alembic_version.version_num = '0007';
+
+-- Running upgrade 0008 -> 0009
+
+CREATE TABLE message_attachments (
+    id UUID NOT NULL, 
+    message_id UUID NOT NULL, 
+    file_name VARCHAR(200) NOT NULL, 
+    content_type VARCHAR(50) NOT NULL, 
+    size INTEGER NOT NULL, 
+    data BYTEA NOT NULL, 
+    CONSTRAINT pk_message_attachments PRIMARY KEY (id), 
+    CONSTRAINT fk_message_attachments_message_id_messages FOREIGN KEY(message_id) REFERENCES messages (id) ON DELETE CASCADE, 
+    CONSTRAINT uq_message_attachments_message_id UNIQUE (message_id)
+);
+
+ALTER TABLE message_attachments ENABLE ROW LEVEL SECURITY;
+
+UPDATE alembic_version SET version_num='0009' WHERE alembic_version.version_num = '0008';
+
+-- Running upgrade 0009 -> 0010
+
+ALTER TABLE session_reviews DROP CONSTRAINT uq_session_reviews_one_per_reviewer;
+
+ALTER TABLE session_reviews ADD CONSTRAINT uq_session_reviews_one_per_pair UNIQUE (session_id, reviewer_id, reviewee_id);
+
+ALTER TABLE session_reviews ADD COLUMN clarity INTEGER NOT NULL;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_clarity_range CHECK (clarity BETWEEN 1 AND 5);
+
+ALTER TABLE session_reviews ADD COLUMN listening INTEGER NOT NULL;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_listening_range CHECK (listening BETWEEN 1 AND 5);
+
+ALTER TABLE session_reviews ADD COLUMN preparation INTEGER NOT NULL;
+
+ALTER TABLE session_reviews ADD CONSTRAINT ck_session_reviews_preparation_range CHECK (preparation BETWEEN 1 AND 5);
+
+UPDATE alembic_version SET version_num='0010' WHERE alembic_version.version_num = '0009';
+
 COMMIT;
 

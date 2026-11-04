@@ -67,7 +67,7 @@ def test_review_rating_must_be_between_1_and_5(db):
     study = StudySession(match_id=request.id)
     db.add(study)
     db.flush()
-    db.add(SessionReview(session_id=study.id, reviewer_id=ana.id, reviewee_id=bea.id, rating=6))
+    db.add(SessionReview(session_id=study.id, reviewer_id=ana.id, reviewee_id=bea.id, rating=6, clarity=3, listening=3, preparation=3))
     with pytest.raises(IntegrityError):
         db.flush()
 

@@ -124,7 +124,7 @@ export const Learn: React.FC = () => {
                     }
                   />
                 </div>
-                {person.bio && <p className="text-sm text-muted break-words">{person.bio}</p>}
+                {person.study && <p className="text-sm text-muted break-words">{person.study}</p>}
                 <div className="flex flex-wrap gap-1.5">
                   {person.sharedInterests.map(topic => (
                     <span key={topic} className="chip chip-learn">{topic}</span>

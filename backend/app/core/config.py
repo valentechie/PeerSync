@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     jwt_secret: str = "peersync-hackathon-demo-secret-not-for-production"
     access_token_expire_minutes: int = 60 * 24 * 7
     cors_origins: str = "http://localhost:5173"
+    # Sin clave, el entrenamiento con IA responde que no está configurado.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.5-flash-lite"
 
     @field_validator("database_url")
     @classmethod

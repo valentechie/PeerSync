@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, MessagesSquare, Users, User, LogOut } from 'lucide-react';
+import { BookOpen, GraduationCap, MessagesSquare, Mic, Users, User, LogOut } from 'lucide-react';
 import { SwapMark } from './Swap';
 
 export const Navbar: React.FC = () => {
@@ -10,8 +10,10 @@ export const Navbar: React.FC = () => {
 
   const navItems = [
     { name: 'Salas', short: 'Salas', path: '/rooms', icon: MessagesSquare },
+    { name: 'Compañeros', short: 'Compis', path: '/classmates', icon: GraduationCap },
     { name: 'Amigos', short: 'Amigos', path: '/friends', icon: Users },
-    { name: 'Aprender', short: 'Aprender', path: '/learn', icon: GraduationCap },
+    { name: 'Aprender', short: 'Aprender', path: '/learn', icon: BookOpen },
+    { name: 'Practicar', short: 'Practicar', path: '/practice', icon: Mic },
     { name: 'Mi perfil', short: 'Perfil', path: '/my-profile', icon: User },
   ];
 
@@ -67,7 +69,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Navigation bar */}
-      <nav className="lg:hidden grid grid-cols-4 border-t border-line px-1 py-1" aria-label="Principal móvil">
+      <nav className="lg:hidden grid grid-cols-6 border-t border-line px-0.5 py-1" aria-label="Principal móvil">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -75,7 +77,7 @@ export const Navbar: React.FC = () => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                `flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[11px] tracking-tight font-bold transition-colors ${
                   isActive ? 'nav-active' : 'text-muted'
                 }`
               }

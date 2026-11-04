@@ -6,9 +6,10 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.ai.skillswap.studies import study_label
 from app.models.match import MatchRequest
 from app.models.profile import Profile
-from app.models.session import SessionReview, SessionStatus, StudySession
+from app.models.session import SessionParticipant, SessionReview, SessionStatus, StudySession
 from app.models.skill import Skill, SkillKind, UserSkill
 from app.models.user import User
 from app.schemas.profile import ProfileRead, ProfileUpdate
@@ -47,6 +48,17 @@ def completed_sessions_by_user(db: Session, user_ids: Collection[UUID]) -> dict[
             .group_by(participant)
         )
         counts.update(dict(db.execute(query).all()))
+    rooms = (
+        select(SessionParticipant.user_id, func.count())
+        .join(StudySession, SessionParticipant.session_id == StudySession.id)
+        .where(
+            StudySession.match_id.is_(None),
+            StudySession.status == SessionStatus.COMPLETED,
+            SessionParticipant.user_id.in_(user_ids),
+        )
+        .group_by(SessionParticipant.user_id)
+    )
+    counts.update(dict(db.execute(rooms).all()))
     return counts
 
 
@@ -58,6 +70,8 @@ def get_profile(db: Session, user: User) -> ProfileRead:
         name=user.name,
         email=user.email,
         bio=profile.bio if profile else "",
+        study_code=profile.study_code if profile else None,
+        study=study_label(profile.study_code) if profile else None,
         skills_offering=skills.get((user.id, SkillKind.OFFERING), []),
         skills_seeking=skills.get((user.id, SkillKind.SEEKING), []),
         reputation=reputation_by_user(db, [user.id]).get(user.id),
@@ -90,12 +104,15 @@ def _replace_skills(db: Session, user: User, kind: SkillKind, names: list[str]) 
 def update_profile(db: Session, user: User, data: ProfileUpdate) -> ProfileRead:
     if data.name is not None:
         user.name = data.name
-    if data.bio is not None:
+    if data.bio is not None or "study_code" in data.model_fields_set:
         profile = db.get(Profile, user.id)
         if profile is None:
-            db.add(Profile(user_id=user.id, bio=data.bio))
-        else:
+            profile = Profile(user_id=user.id, bio="")
+            db.add(profile)
+        if data.bio is not None:
             profile.bio = data.bio
+        if "study_code" in data.model_fields_set:
+            profile.study_code = data.study_code
     if data.skills_offering is not None:
         _replace_skills(db, user, SkillKind.OFFERING, data.skills_offering)
     if data.skills_seeking is not None:

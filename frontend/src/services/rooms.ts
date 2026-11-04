@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { apiBlob, apiRequest, apiUpload } from './api';
 
 export interface RoomSummary {
   id: string;
@@ -6,11 +6,20 @@ export interface RoomSummary {
   objective: string;
   participantCount: number;
   isMember: boolean;
+  isClosed: boolean;
   lastActivityAt: string;
 }
 
 export interface RoomDetail extends RoomSummary {
-  participants: { id: string; name: string }[];
+  participants: { id: string; name: string; reviewedByMe: boolean }[];
+  canClose: boolean;
+}
+
+export interface RoomAttachment {
+  id: string;
+  fileName: string;
+  contentType: string;
+  size: number;
 }
 
 export interface RoomMessage {
@@ -19,6 +28,7 @@ export interface RoomMessage {
   senderName: string;
   content: string;
   createdAt: string;
+  attachment: RoomAttachment | null;
 }
 
 export const fetchRooms = (token: string) => apiRequest<RoomSummary[]>('/rooms', { token });
@@ -40,3 +50,12 @@ export const fetchMessages = (token: string, id: string) =>
 
 export const sendMessage = (token: string, id: string, content: string) =>
   apiRequest<RoomMessage>(`/rooms/${encodeURIComponent(id)}/messages`, { method: 'POST', body: { content }, token });
+
+export const uploadAttachment = (token: string, id: string, file: File) =>
+  apiUpload<RoomMessage>(`/rooms/${encodeURIComponent(id)}/attachments?fileName=${encodeURIComponent(file.name)}`, file, token);
+
+export const fetchAttachment = (token: string, roomId: string, attachmentId: string) =>
+  apiBlob(`/rooms/${encodeURIComponent(roomId)}/attachments/${encodeURIComponent(attachmentId)}`, token);
+
+export const closeRoom = (token: string, id: string) =>
+  apiRequest<RoomDetail>(`/rooms/${encodeURIComponent(id)}/close`, { method: 'POST', token });

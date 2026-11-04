@@ -81,6 +81,7 @@
   }
 
   .card {
+    color-scheme: light;
     --color-paper: #f8f7ff;
     --color-surface: #ffffff;
     --color-ink: #0f172a;

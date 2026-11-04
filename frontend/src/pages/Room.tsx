@@ -1,15 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Flag, Lightbulb, Link2, LogOut, MessageSquareQuote, Send, Users } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, DoorClosed, Flag, Lightbulb, Link2, LogOut, MessageSquareQuote, Paperclip, Send, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../services/api';
 import { fetchFriends, type FriendStatus } from '../services/people';
-import { fetchMessages, fetchRoom, joinRoom, leaveRoom, sendMessage, type RoomDetail, type RoomMessage } from '../services/rooms';
+import { closeRoom, fetchMessages, fetchRoom, joinRoom, leaveRoom, sendMessage, uploadAttachment, type RoomDetail, type RoomMessage } from '../services/rooms';
 import { ErrorState, LoadingState } from '../components/UIStates';
 import { Avatar } from '../components/Swap';
 import { FriendButton } from '../components/FriendButton';
+import { AttachmentView } from '../components/AttachmentView';
+import { ReviewForm } from '../components/ReviewForm';
+import { findYouTubeId, YouTubeEmbed } from '../components/YouTubeEmbed';
 
 const POLL_INTERVAL_MS = 3000;
+const MAX_FILE_BYTES = 4 * 1024 * 1024;
+const ACCEPTED_FILES = 'image/png,image/jpeg,image/gif,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/mp4,audio/x-m4a,video/mp4,video/webm,application/pdf';
 
 const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -24,11 +29,15 @@ export const Room: React.FC = () => {
   const [attempt, setAttempt] = useState(0);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [sendError, setSendError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [friendStatuses, setFriendStatuses] = useState<Record<string, FriendStatus>>({});
   const chatRef = useRef<HTMLDivElement>(null);
   const followChat = useRef(true);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   // Al abrir la sala se entra en ella; después se consulta cada pocos segundos.
   useEffect(() => {
@@ -102,6 +111,27 @@ export const Room: React.FC = () => {
     }
   };
 
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!token || !file) return;
+    if (file.size > MAX_FILE_BYTES) {
+      setSendError('El archivo no puede superar los 4 MB. Para vídeos largos, pega un enlace de YouTube.');
+      return;
+    }
+    setUploading(true);
+    setSendError('');
+    try {
+      const message = await uploadAttachment(token, id, file);
+      followChat.current = true;
+      setMessages(current => (current.some(m => m.id === message.id) ? current : [...current, message]));
+    } catch (err) {
+      setSendError(errorMessage(err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleLeave = async () => {
     if (!token) return;
     try {
@@ -110,6 +140,24 @@ export const Room: React.FC = () => {
     } catch (err) {
       setSendError(errorMessage(err));
     }
+  };
+
+  const handleClose = async () => {
+    if (!token) return;
+    setClosing(true);
+    setSendError('');
+    try {
+      setRoom(await closeRoom(token, id));
+    } catch (err) {
+      setSendError(errorMessage(err));
+    } finally {
+      setClosing(false);
+      setConfirmingClose(false);
+    }
+  };
+
+  const refreshRoom = () => {
+    if (token) fetchRoom(token, id).then(setRoom).catch(() => undefined);
   };
 
   const handleCopyLink = async () => {
@@ -149,13 +197,16 @@ export const Room: React.FC = () => {
 
   if (!room) return <LoadingState message="Entrando en la sala..." />;
 
+  const others = room.participants.filter(participant => participant.id !== user?.id);
+  const pendingReviews = room.isClosed ? others.filter(participant => !participant.reviewedByMe) : [];
+
   return (
     <div className="page max-w-7xl space-y-4">
       {backButton}
 
       <section className="hero p-5 sm:p-6">
         <div className="relative space-y-1.5">
-          <p className="text-xs font-bold uppercase tracking-widest text-indigo-100">Sala de estudio</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-100">{room.isClosed ? 'Sala cerrada' : 'Sala de estudio'}</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold break-words">{room.title}</h1>
           {room.objective && (
             <p className="text-indigo-100 flex items-start gap-2">
@@ -168,16 +219,38 @@ export const Room: React.FC = () => {
 
       {connectionLost && <ErrorState message="Se perdió la conexión. Reintentando..." />}
 
+      {room.isClosed && (
+        <section className="card p-5 sm:p-6 space-y-4" aria-labelledby="evaluations">
+          <div>
+            <h2 id="evaluations" className="text-2xl text-ink">Sala cerrada: toca evaluar</h2>
+            <p className="text-sm text-muted mt-1">Cuéntale a cada persona cómo ha ido, con sinceridad y respeto. Le ayudará a mejorar.</p>
+          </div>
+          {others.length === 0 && <p className="text-sm text-muted">No había nadie más en la sala, así que no hay nada que evaluar.</p>}
+          {others.length > 0 && pendingReviews.length === 0 && (
+            <p className="text-sm font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-teach shrink-0" aria-hidden="true" />
+              <span>Ya has evaluado a todos. ¡Gracias!</span>
+            </p>
+          )}
+          <div className="grid md:grid-cols-2 gap-4 items-start">
+            {pendingReviews.map(person => (
+              <ReviewForm key={person.id} roomId={id} person={person} onDone={refreshRoom} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <section className="card lg:col-span-2 flex flex-col h-[60vh] min-h-96" aria-label="Conversación">
           <div ref={chatRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4" aria-live="polite">
             {messages.length === 0 && (
               <p className="text-center text-sm text-muted py-12">
-                Nadie ha escrito todavía. Empieza con una duda: no hace falta saber la respuesta.
+                Nadie ha escrito todavía. Empieza con una duda o comparte un archivo: no hace falta saber la respuesta.
               </p>
             )}
             {messages.map(message => {
               const mine = message.senderId === user?.id;
+              const youTubeId = findYouTubeId(message.content);
               return (
                 <div key={message.id} className={`flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
                   <Avatar name={message.senderName} tone={mine ? 'teach' : 'learn'} className="w-8 h-8 text-sm" />
@@ -186,9 +259,13 @@ export const Room: React.FC = () => {
                       <span className="font-bold">{mine ? 'Tú' : message.senderName}</span>{' '}
                       <span className="text-muted">{formatTime(message.createdAt)}</span>
                     </p>
-                    <p className={`inline-block text-left whitespace-pre-wrap break-words px-3.5 py-2.5 rounded-2xl text-sm ${mine ? 'bg-teach-soft rounded-br-sm' : 'bg-learn-soft rounded-bl-sm'}`}>
-                      {message.content}
-                    </p>
+                    {message.content && (
+                      <p className={`inline-block text-left whitespace-pre-wrap break-words px-3.5 py-2.5 rounded-2xl text-sm ${mine ? 'bg-teach-soft rounded-br-sm' : 'bg-learn-soft rounded-bl-sm'}`}>
+                        {message.content}
+                      </p>
+                    )}
+                    {message.attachment && <AttachmentView roomId={id} attachment={message.attachment} />}
+                    {youTubeId && <YouTubeEmbed videoId={youTubeId} />}
                   </div>
                 </div>
               );
@@ -197,12 +274,24 @@ export const Room: React.FC = () => {
 
           {sendError && <div className="px-4 pb-2"><ErrorState message={sendError} /></div>}
 
+          {!room.isClosed && (
           <form onSubmit={handleSend} className="p-4 border-t border-line flex items-center gap-2">
+            <input ref={fileInput} type="file" accept={ACCEPTED_FILES} onChange={handleFile} className="hidden" aria-label="Archivo para compartir" />
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              disabled={uploading}
+              aria-label="Compartir imagen, audio, vídeo o PDF"
+              title="Compartir imagen, audio, vídeo o PDF (hasta 4 MB)"
+              className="btn btn-secondary px-4!"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
             <input
               value={draft}
               onChange={e => setDraft(e.target.value)}
               maxLength={2000}
-              placeholder="Escribe un mensaje..."
+              placeholder={uploading ? 'Subiendo archivo...' : 'Escribe un mensaje o pega un enlace de YouTube...'}
               aria-label="Mensaje"
               className="field flex-1 min-w-0"
             />
@@ -210,6 +299,7 @@ export const Room: React.FC = () => {
               <Send className="w-4 h-4" />
             </button>
           </form>
+          )}
         </section>
 
         <aside className="space-y-6" aria-label="Información de la sala">
@@ -236,6 +326,8 @@ export const Room: React.FC = () => {
                 </li>
               ))}
             </ul>
+            {!room.isClosed && (
+              <>
             <button onClick={handleCopyLink} className="btn btn-secondary w-full">
               {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
               <span>{copied ? 'Enlace copiado' : 'Invitar con un enlace'}</span>
@@ -244,6 +336,25 @@ export const Room: React.FC = () => {
               <LogOut className="w-4 h-4" />
               <span>Salir de la sala</span>
             </button>
+              </>
+            )}
+            {room.canClose && !confirmingClose && (
+              <button onClick={() => setConfirmingClose(true)} className="btn btn-secondary w-full hover:border-learn! hover:text-learn-strong!">
+                <DoorClosed className="w-4 h-4" aria-hidden="true" />
+                <span>Cerrar la sala</span>
+              </button>
+            )}
+            {room.canClose && confirmingClose && (
+              <div className="rounded-2xl bg-learn-soft p-4 space-y-3" role="alertdialog" aria-label="Confirmar cierre">
+                <p className="text-sm font-bold text-learn-strong">¿Cerrar la sala para todos? Nadie podrá escribir más y empezaréis a evaluaros.</p>
+                <div className="flex gap-2">
+                  <button onClick={handleClose} disabled={closing} className="btn btn-primary flex-1">
+                    {closing ? 'Cerrando...' : 'Sí, cerrar'}
+                  </button>
+                  <button onClick={() => setConfirmingClose(false)} disabled={closing} className="btn btn-secondary flex-1">Cancelar</button>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="card p-5 space-y-3">

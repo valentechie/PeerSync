@@ -109,9 +109,12 @@ pulir nada:
 
 ## Estado actual del repo
 
-Implementado: acceso en modo demo, perfil, matching determinista
-y envío de solicitudes. Los modelos y las tablas de sesiones ya existen.
+Foco del producto: salas de estudio entre pares que no tienen por qué ser expertos.
+La sala es lo más importante. La web no muestra lo que cada uno ofrece ni el matching por habilidades.
 
-Pendiente, en este orden: aceptar o rechazar solicitudes, sala de estudio,
-StudyMind, TeachBack y resumen de sesión. Hasta entonces, el frontend muestra
-estados vacíos en esas pantallas.
+Implementado: acceso en modo demo, perfil, salas abiertas con chat por consulta
+periódica, amigos, gente que quiere aprender lo mismo y compañeros por estudios
+(`ai/skillswap/studies.py`). La API de matching y sus tablas siguen disponibles, sin uso en la web.
+
+Pendiente: StudyMind, TeachBack y Contrasta dentro de la sala. `study_sessions` es
+la sala, y de ahí cuelgan sus tablas.

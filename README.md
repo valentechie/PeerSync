@@ -20,6 +20,7 @@ npm run dev
 
 1. Importa el repositorio en Vercel y deja **Root Directory** en la raíz.
 2. Añade la variable de entorno `DATABASE_URL`, con la cadena **Transaction pooler** de Supabase (puerto `6543`).
+3. Para el apartado Practicar, añade también `GEMINI_API_KEY`. Sin ella, ese apartado avisa de que no está configurado.
 
 **Modo demo:** el login no comprueba credenciales, así que cualquiera puede entrar como cualquier usuario. No lo uses con datos reales.
 
