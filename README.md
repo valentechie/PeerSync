@@ -25,8 +25,8 @@ npm run dev
 |---|---|
 | `DATABASE_URL` | Cadena **Transaction pooler** de Supabase (puerto `6543`) |
 | `JWT_SECRET` | Nuevo, de al menos 32 caracteres: `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` |
-| `GOOGLE_CLIENT_ID` | ID de cliente OAuth de Google |
-| `VITE_GOOGLE_CLIENT_ID` | El mismo ID (se usa al compilar el frontend) |
+
+El ID de cliente de Google es público y ya viene por defecto en el código; `GOOGLE_CLIENT_ID` y `VITE_GOOGLE_CLIENT_ID` solo hacen falta para usar otro.
 
 3. Despliega y añade el dominio de producción a **Orígenes autorizados de JavaScript** en Google Cloud. Las URLs de preview cambian en cada despliegue, así que el acceso con Google solo funciona en los dominios añadidos.
 

@@ -15,7 +15,11 @@ class Settings(BaseSettings):
 
     database_url: str
     jwt_secret: str = Field(min_length=32)
-    google_client_id: str = Field(min_length=1)
+    # Público: el frontend lo envía a cada navegador.
+    google_client_id: str = Field(
+        default="21011797432-8v3d5epni7iolvf79r85q4298hg0gbmo.apps.googleusercontent.com",
+        min_length=1,
+    )
     access_token_expire_minutes: int = Field(default=60, gt=0)
     cors_origins: str = "http://localhost:5173"
 

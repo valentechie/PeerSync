@@ -12,7 +12,8 @@ declare global {
   }
 }
 
-const CLIENT_ID: string | undefined = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+// Público: Google lo exige en el navegador. La variable permite usar otro cliente.
+const CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID || '21011797432-8v3d5epni7iolvf79r85q4298hg0gbmo.apps.googleusercontent.com';
 const SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 const MAX_BUTTON_WIDTH = 400; // Límite que impone Google.
 
@@ -49,8 +50,6 @@ export const GoogleSignInButton: React.FC<{ onCredential: (credential: string) =
   });
 
   useEffect(() => {
-    if (!CLIENT_ID) return;
-    const clientId = CLIENT_ID;
     let cancelled = false;
     loadScript()
       .then(() => {
@@ -60,7 +59,7 @@ export const GoogleSignInButton: React.FC<{ onCredential: (credential: string) =
         // Google avisa si se inicializa más de una vez.
         if (!initialized) {
           identity.initialize({
-            client_id: clientId,
+            client_id: CLIENT_ID,
             callback: ({ credential }) => onCredentialReceived?.(credential),
           });
           initialized = true;
@@ -82,7 +81,6 @@ export const GoogleSignInButton: React.FC<{ onCredential: (credential: string) =
     };
   }, []);
 
-  if (!CLIENT_ID) return <ErrorState message="Falta configurar el acceso con Google (VITE_GOOGLE_CLIENT_ID)." />;
   if (loadFailed) {
     return <ErrorState message="No se pudo cargar el acceso con Google. Revisa tu conexión o tu bloqueador de contenido y recarga la página." />;
   }
