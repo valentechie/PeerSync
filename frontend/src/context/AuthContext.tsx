@@ -6,14 +6,10 @@ export interface User {
   name: string;
   email: string;
   bio: string;
-  skillsOffering: string[];
   skillsSeeking: string[];
-  /** null hasta recibir la primera valoración de un compañero. */
-  reputation: number | null;
-  completedSessions: number;
 }
 
-export type ProfileChanges = Partial<Pick<User, 'name' | 'bio' | 'skillsOffering' | 'skillsSeeking'>>;
+export type ProfileChanges = Partial<Pick<User, 'name' | 'bio' | 'skillsSeeking'>>;
 
 interface AuthContextType {
   user: User | null;
@@ -30,9 +26,10 @@ interface AuthContextType {
 const TOKEN_KEY = 'peersync_token';
 const PROFILE_PATH = '/profiles/me';
 
+// sessionStorage: la sesión dura hasta cerrar la pestaña, así que cada visita pide login.
 const readToken = (): string | null => {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -40,8 +37,10 @@ const readToken = (): string | null => {
 
 const writeToken = (token: string | null) => {
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
+    // Limpia la sesión que guardaban las versiones anteriores.
+    localStorage.removeItem(TOKEN_KEY);
   } catch {
     // Sin almacenamiento la sesión dura hasta recargar la página.
   }

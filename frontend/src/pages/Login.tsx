@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ArrowRight, Lock, User } from 'lucide-react';
 import { ErrorState } from '../components/UIStates';
@@ -11,8 +11,10 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated } = useAuth();
+  const location = useLocation();
 
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  // Vuelve a la página pedida: así funcionan los enlaces de invitación a una sala.
+  if (isAuthenticated) return <Navigate to={location.state?.from ?? '/rooms'} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

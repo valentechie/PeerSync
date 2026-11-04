@@ -10,6 +10,9 @@ export class ApiError extends Error {
   }
 }
 
+export const errorMessage = (err: unknown) =>
+  err instanceof Error ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+
 interface ValidationIssue {
   loc: (string | number)[];
 }
@@ -39,6 +42,7 @@ export async function apiRequest<T>(path: string, options: { method?: string; bo
     throw new ApiError(0, 'No se pudo conectar con el servidor. Inténtalo de nuevo.');
   }
 
+  if (response.status === 204) return undefined as T;
   if (response.ok) return response.json() as Promise<T>;
 
   const detail: unknown = await response.json().then(data => data.detail, () => undefined);
