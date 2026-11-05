@@ -18,7 +18,8 @@ import { ContrastaActionMenu } from '../components/ContrastaActionMenu';
 import { ActionForm, CheckCard, ConclusionCard, HelpResultCard, RevealCard, RoundCard, SessionCard, SuggestionCard } from '../components/ContrastaCards';
 import { TeachBackActivityCard } from '../components/TeachBackActivityCard';
 import { FlowContext, useContrastaFlow, type FlowContextValue, type FormKey } from '../components/contrastaFlowContext';
-import type { Activity, Flow } from '../services/contrastaFlow';
+import { ContrastaVoice, WelcomeVoice } from '../components/ContrastaVoice';
+import type { Flow } from '../services/contrastaFlow';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
@@ -38,6 +39,7 @@ const buildTimeline = (messages: RoomMessage[], flow: Flow | null): TimelineItem
     const card = (key: string, at: string, render: () => React.ReactNode) => items.push({ key, at, type: 'card', render });
     card(`round:${round.id}`, round.createdAt, () => <RoundCard flow={flow} />);
     if (round.revealedAt) card(`reveal:${round.id}`, round.revealedAt, () => <RevealCard flow={flow} />);
+    flow.voice.forEach(voice => card(`voice:${voice.key}`, voice.at, () => <ContrastaVoice voice={voice} flow={flow} />));
     flow.cards.forEach(help => card(`help:${help.id}`, help.createdAt, () => <HelpResultCard card={help} />));
     if (round.conclusion) card(`conclusion:${round.id}`, round.conclusion.at, () => <ConclusionCard flow={flow} />);
     flow.activities.forEach(activity => card(`activity:${activity.id}`, activity.createdAt, () => <TeachBackActivityCard activity={activity} />));
@@ -50,29 +52,6 @@ const buildTimeline = (messages: RoomMessage[], flow: Flow | null): TimelineItem
 const isEditing = (container: HTMLElement) => {
   const active = document.activeElement;
   return Boolean(active && container.contains(active) && ['TEXTAREA', 'INPUT', 'SELECT'].includes(active.tagName));
-};
-
-/** Lo que espera a esta persona: permite volver a una tarjeta que ha quedado arriba. */
-const pendingForMe = (flow: Flow | null, userId?: string): { text: string; target: string } | null => {
-  const round = flow?.round;
-  if (!flow || !round || round.finishedAt) return null;
-  const open = flow.activities.find(activity => activity.status === 'pending' || activity.status === 'active');
-  const step = flow.step ? `Step ${flow.step.number} of 6 · ` : '';
-  if (open) return { text: `${step}${activityStatusText(open, userId)}`, target: `activity:${open.id}` };
-  if (round.status === 'individual' && !round.iHaveAnswered) return { text: `${step}Your answer is pending`, target: `round:${round.id}` };
-  if (flow.check && !flow.check.iHaveAnswered) return { text: `${step}A new question is waiting`, target: `check:${round.id}` };
-  return null;
-};
-
-const activityStatusText = (activity: Activity, userId?: string) => {
-  if (activity.status === 'pending') {
-    return activity.partner.id === userId ? `${activity.proposer.name} proposed TeachBack` : 'TeachBack proposal pending';
-  }
-  const explainer = activity.turn === 1 ? activity.proposer : activity.partner;
-  const current = activity.turns.find(turn => turn.turn === activity.turn);
-  if (!current) return explainer.id === userId ? 'Your turn to explain' : `${explainer.name} is explaining`;
-  if (!current.review) return explainer.id === userId ? 'Waiting for a review' : 'Your turn to review';
-  return 'TeachBack turn reviewed';
 };
 
 export const Room: React.FC = () => {
@@ -195,9 +174,21 @@ export const Room: React.FC = () => {
     if (lastItem.type === 'message') {
       if (lastItem.message.senderId !== user?.id) setAnnouncement(`${lastItem.message.senderName}: ${lastItem.message.content.slice(0, 200)}`);
     } else {
-      setAnnouncement('Contrasta has a new update in the conversation.');
+      const voice = flow?.voice.find(item => `voice:${item.key}` === lastItem.key);
+      setAnnouncement(voice ? `Contrasta: ${voice.text}` : 'Contrasta has a new update in the conversation.');
     }
-  }, [lastItem, user?.id]);
+  }, [lastItem, user?.id, flow]);
+
+  // Si te toca actuar, se ve también desde otra pestaña.
+  const myMove = Boolean(flow?.move?.mine);
+  useEffect(() => {
+    if (!myMove) return;
+    const original = document.title;
+    document.title = `(1) Your move · ${original}`;
+    return () => {
+      document.title = original;
+    };
+  }, [myMove]);
 
   const handleScroll = () => {
     const chat = chatRef.current;
@@ -221,6 +212,11 @@ export const Room: React.FC = () => {
   }, [openForm, scrollToEnd]);
 
   const focusComposer = useCallback(() => composerInput.current?.focus(), []);
+  // Solo prepara el texto: lo envía siempre la persona.
+  const insertInComposer = useCallback((text: string) => {
+    setDraft(current => (current.trim() ? `${current.trimEnd()} ${text}` : text));
+    composerInput.current?.focus();
+  }, []);
 
   const flowContext = useMemo<FlowContextValue | null>(
     () =>
@@ -235,9 +231,10 @@ export const Room: React.FC = () => {
             refresh: refreshFlow,
             openForm: openActionForm,
             focusComposer,
+            insertInComposer,
           }
         : null,
-    [flow, token, user, roomId, roomIsClosed, applyFlow, refreshFlow, openActionForm, focusComposer],
+    [flow, token, user, roomId, roomIsClosed, applyFlow, refreshFlow, openActionForm, focusComposer, insertInComposer],
   );
 
   const handleSend = async (e: React.FormEvent) => {
@@ -362,7 +359,8 @@ export const Room: React.FC = () => {
 
   const others = room.participants.filter(participant => participant.id !== user?.id);
   const othersInRoom = others.length;
-  const pending = pendingForMe(flow, user?.id);
+  const move = flow?.move ?? null;
+  const step = flow?.step ?? null;
 
   return (
     <div className="page max-w-7xl space-y-4">
@@ -388,16 +386,27 @@ export const Room: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <section className="card lg:col-span-2 flex flex-col h-[60vh] lg:h-[65vh] min-h-96" aria-label="Conversation">
           <p className="sr-only" aria-live="polite">{announcement}</p>
-          {pending && (
-            <div className="px-4 py-2 border-b border-line flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
-              <span className="font-bold min-w-0 break-words">{pending.text}</span>
-              <button
-                type="button"
-                onClick={() => document.getElementById(`timeline-${pending.target}`)?.scrollIntoView({ block: 'start' })}
-                className="font-bold text-teach-strong cursor-pointer shrink-0"
-              >
-                Go to activity
-              </button>
+          {move && (
+            <div className="px-4 py-2 border-b border-line space-y-1.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <span className={`min-w-0 break-words ${move.mine ? 'font-bold' : 'text-muted font-semibold'}`}>{move.text}</span>
+                {move.target && (
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(`timeline-${move.target}`)?.scrollIntoView({ block: 'start' })}
+                    className="font-bold text-teach-strong cursor-pointer shrink-0"
+                  >
+                    Show me
+                  </button>
+                )}
+              </div>
+              {step && (
+                <div className="flex gap-1" role="img" aria-label={`Step ${step.number} of 6: ${step.label}`} title={`Step ${step.number} of 6 · ${step.label}`}>
+                  {[1, 2, 3, 4, 5, 6].map(number => (
+                    <span key={number} className={`h-1 flex-1 rounded-full ${number <= step.number ? 'bg-teach' : 'bg-line'}`} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
           <div className="relative flex-1 min-h-0 flex flex-col">
@@ -410,9 +419,10 @@ export const Room: React.FC = () => {
             {flowContext ? (
               <FlowContext.Provider value={flowContext}>
                 {timeline.map(item => {
-                  if (item.type === 'card') return <div key={item.key} id={`timeline-${item.key}`}>{item.render()}</div>;
+                  if (item.type === 'card') return <div key={item.key} id={`timeline-${item.key}`} className="animate-[fadeIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">{item.render()}</div>;
                   return renderMessage(item.message);
                 })}
+                {!openForm && <WelcomeVoice flow={flowContext.flow} />}
                 {openForm && <ActionForm key={openForm} form={openForm} flow={flowContext.flow} others={others} onClose={() => setOpenForm(null)} />}
               </FlowContext.Provider>
             ) : (

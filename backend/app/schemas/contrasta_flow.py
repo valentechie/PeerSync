@@ -14,6 +14,7 @@ Short = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, ma
 Medium = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 Long = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)]
 ActionKey = Literal["start", "hint", "idea", "practice", "conclusion"]
+ReactionKind = Literal["agree", "doubt", "convince"]
 
 
 class _Input(_Camel):
@@ -56,6 +57,14 @@ class CheckAnswerCreate(_Input):
     reflection: Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)] = ""
 
 
+class PredictionCreate(_Input):
+    text: Medium
+
+
+class ReactionCreate(_Input):
+    kind: ReactionKind
+
+
 class ActionRead(_Camel):
     key: ActionKey
     enabled: bool
@@ -72,6 +81,16 @@ class ConclusionRead(_Camel):
     by: PersonRef
     at: datetime
     confirmed_at: datetime | None
+
+
+class PredictionRead(_Camel):
+    person: PersonRef
+    text: str
+
+
+class ReactionRead(_Camel):
+    person: PersonRef
+    kind: ReactionKind
 
 
 class FlowRound(_Camel):
@@ -91,6 +110,10 @@ class FlowRound(_Camel):
     conclusion: ConclusionRead | None
     finish_requested_by_me: bool
     finish_requested_by_partner: bool
+    my_prediction: str | None
+    # Vacío hasta revelar, igual que las respuestas.
+    predictions: list[PredictionRead]
+    reactions: list[ReactionRead]
 
 
 class ComparisonResult(_Camel):
@@ -174,6 +197,28 @@ class SuggestionRead(_Camel):
     at: datetime
 
 
+class VoiceRead(_Camel):
+    """Lo que dice Contrasta: texto fijo de la aplicación, no IA, y ya filtrado para quien lo lee."""
+
+    key: str
+    at: datetime
+    kind: Literal["info", "prediction", "debate"]
+    text: str
+
+
+class MoveRead(_Camel):
+    """A quién le toca. `mine` indica que esta persona tiene algo concreto que hacer."""
+
+    mine: bool
+    text: str
+    target: str | None
+
+
+class WelcomeRead(_Camel):
+    key: str
+    text: str
+
+
 class FlowRead(_Camel):
     round: FlowRound | None
     # Hay una ronda de otra pareja: se dice, sin mostrar nada de ella.
@@ -185,3 +230,6 @@ class FlowRead(_Camel):
     suggestion: SuggestionRead | None
     step: StepRead | None
     actions: list[ActionRead]
+    voice: list[VoiceRead]
+    move: MoveRead | None
+    welcome: WelcomeRead | None

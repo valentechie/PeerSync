@@ -33,6 +33,8 @@ Supabase publica el esquema `public` en una API REST. **Toda tabla nueva debe ac
 | `teachback_activities` | Propuesta y actividad TeachBack de una pareja | Nace `pending`; turno 1 explica quien propone y turno 2 su pareja |
 | `contrasta_checks` | Comprobación individual | Una por ronda; sin nota ni solución |
 | `contrasta_check_answers` | Respuestas a la comprobación | Ocultas hasta que respondan los dos |
+| `contrasta_reactions` | Reacción a la respuesta revelada | Una por persona y ronda: `agree`, `doubt` o `convince` |
+| `contrasta_predictions` | Predicción de la respuesta del compañero | Una por persona y ronda; oculta hasta revelar y nunca llega a la IA |
 
 Reputación y sesiones completadas no se almacenan: se calculan a partir de `session_reviews` y `study_sessions`.
 
@@ -43,3 +45,7 @@ Todas las claves foráneas usan `ON DELETE CASCADE`: borrar un usuario borra sus
 Solo añade tablas y columnas opcionales. En `contrasta_rounds`: `pair_a_id` y `pair_b_id` (sin ellas la ronda sigue las reglas de siempre), `conclusion`, `conclusion_by_id`, `conclusion_at`, `conclusion_confirmed_at`, `finish_requested_by_id` y `finished_at`. En `teachback_submissions`: `activity_id` y `turn`; sin `activity_id` es una explicación independiente del panel.
 
 La migración debe aplicarse antes de desplegar este código: el código nuevo lee esas columnas en las rutas de Contrasta y TeachBack.
+
+## Participación (migración `0016`)
+
+Solo añade `contrasta_reactions` y `contrasta_predictions`. Debe aplicarse antes de desplegar este código: la ruta `/contrasta/flow` consulta esas tablas.

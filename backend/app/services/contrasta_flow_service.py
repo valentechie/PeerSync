@@ -22,6 +22,8 @@ from app.models.session import (
     ContrastaCheck,
     ContrastaCheckAnswer,
     ContrastaComparison,
+    ContrastaPrediction,
+    ContrastaReaction,
     ContrastaRound,
     ContrastaStatus,
     StudySession,
@@ -45,8 +47,13 @@ from app.schemas.contrasta_flow import (
     FlowRead,
     FlowRound,
     HelpCard,
+    MoveRead,
+    PredictionRead,
+    ReactionRead,
     StepRead,
     SuggestionRead,
+    VoiceRead,
+    WelcomeRead,
 )
 from app.services import contrasta_service, room_service
 
@@ -223,6 +230,192 @@ def _suggestion(round_: ContrastaRound, activities: list[TeachBackActivity], che
     return None
 
 
+REACTION_VOICE = {
+    "agree": "{partner} agrees with your reasoning. Can you find a case where it would stop working?",
+    "doubt": "{partner} doubts your reasoning. Can you defend it?",
+    "convince": "{partner} wants you to convince them. What evidence would you show?",
+}
+
+
+def _reactions(db: Session, round_id: UUID) -> list[ContrastaReaction]:
+    return list(
+        db.scalars(
+            select(ContrastaReaction).where(ContrastaReaction.round_id == round_id).execution_options(populate_existing=True)
+        )
+    )
+
+
+def _predictions(db: Session, round_id: UUID) -> list[ContrastaPrediction]:
+    return list(db.scalars(select(ContrastaPrediction).where(ContrastaPrediction.round_id == round_id)))
+
+
+def _activity_rows(db: Session, activity_id: UUID) -> list[tuple[TeachBackSubmission, TeachBackPeerReview | None]]:
+    rows = db.execute(
+        select(TeachBackSubmission, TeachBackPeerReview)
+        .outerjoin(TeachBackPeerReview, TeachBackPeerReview.submission_id == TeachBackSubmission.id)
+        .where(TeachBackSubmission.activity_id == activity_id)
+        .order_by(TeachBackSubmission.turn)
+    ).all()
+    return [(submission, review) for submission, review in rows]
+
+
+def _voice(
+    db: Session,
+    round_: ContrastaRound,
+    user: User,
+    partner: str,
+    activities: list[TeachBackActivity],
+    check: ContrastaCheck | None,
+    reactions: list[ContrastaReaction],
+) -> list[VoiceRead]:
+    """Un mensaje por hecho, derivado del estado guardado: recargar o consultar no los repite.
+
+    Reacciona solo a acciones explícitas: nunca lee el chat ni interpreta silencios.
+    """
+    partner_id = _partner_id(round_, user.id)
+    voice: list[VoiceRead] = []
+
+    def say(key: str, at: datetime | None, text: str, kind: str = "info") -> None:
+        if at is not None:
+            voice.append(VoiceRead(key=f"{key}:{round_.id}", at=at, kind=kind, text=text))
+
+    say("start", round_.created_at, "First, each of you will answer independently. Your partner won't see your answer yet.")
+
+    answered_at = dict(
+        db.execute(select(ContrastaAnswer.user_id, ContrastaAnswer.created_at).where(ContrastaAnswer.round_id == round_.id)).all()
+    )
+    my_at, partner_at = answered_at.get(user.id), answered_at.get(partner_id)
+    if partner_at is not None and (my_at is None or partner_at < my_at):
+        say("partner-answered", partner_at, f"{partner} has answered. It's your move: both answers appear when you send yours.")
+    if not _is_revealed(round_) and round_.finished_at is None and my_at is not None:
+        say("predict", my_at, f"While you wait, what do you think {partner} will say?", "prediction")
+
+    if _is_revealed(round_):
+        say(
+            "challenge",
+            round_.revealed_at,
+            f"Your challenge: explain {partner}'s reasoning in your own words. "
+            "Need another perspective? You can request a hint or a way to test your ideas.",
+            "debate",
+        )
+    for reaction in reactions:
+        if reaction.user_id == partner_id:
+            say(f"reaction-{reaction.kind}", reaction.updated_at, REACTION_VOICE[reaction.kind].format(partner=partner), "debate")
+
+    if round_.conclusion is not None and round_.conclusion_by_id == partner_id:
+        say("conclusion", round_.conclusion_at, f"{partner} recorded a conclusion. Do you see it the same way?")
+    say("agreed", round_.conclusion_confirmed_at, "You've agreed on a conclusion. You worked that out together.")
+
+    for activity in activities:
+        for submission, review in _activity_rows(db, activity.id):
+            if submission.explainer_id == partner_id:
+                say(
+                    f"explained-{activity.id}-{submission.turn}",
+                    submission.created_at,
+                    f"{partner} has explained. It's your move: what did you understand, and what would you ask?",
+                )
+            elif review is not None:
+                say(
+                    f"reviewed-{activity.id}-{submission.turn}",
+                    review.created_at,
+                    f"{partner} reviewed your explanation. Read it, and continue when you're ready.",
+                )
+
+    if check is not None:
+        check_at = dict(
+            db.execute(
+                select(ContrastaCheckAnswer.user_id, ContrastaCheckAnswer.created_at).where(ContrastaCheckAnswer.check_id == check.id)
+            ).all()
+        )
+        my_check, partner_check = check_at.get(user.id), check_at.get(partner_id)
+        if partner_check is not None and (my_check is None or partner_check < my_check):
+            say("check-answered", partner_check, f"{partner} has answered the new question. Their answer appears once you send yours.")
+
+    if _is_revealed(round_):
+        say("finished", round_.finished_at, f"Round finished. You and {partner} worked through this together.")
+    return voice
+
+
+def _activity_move(db: Session, activity: TeachBackActivity, user: User, partner: str) -> MoveRead:
+    target = f"activity:{activity.id}"
+    if activity.status == TeachBackActivityStatus.PENDING:
+        if activity.partner_id == user.id:
+            return MoveRead(mine=True, text=f"Your move: {partner} proposed TeachBack", target=target)
+        return MoveRead(mine=False, text=f"Waiting for {partner} to answer your proposal", target=target)
+    explainer_id = activity.proposer_id if activity.turn == 1 else activity.partner_id
+    current = next((row for row in _activity_rows(db, activity.id) if row[0].turn == activity.turn), None)
+    if current is None:
+        if explainer_id == user.id:
+            return MoveRead(mine=True, text="Your move: explain it in your own words", target=target)
+        return MoveRead(mine=False, text=f"{partner} is explaining", target=target)
+    if current[1] is None:
+        if explainer_id == user.id:
+            return MoveRead(mine=False, text=f"Waiting for {partner}'s review", target=target)
+        return MoveRead(mine=True, text=f"Your move: review {partner}'s explanation", target=target)
+    return MoveRead(mine=False, text="Turn reviewed: continue when you're both ready", target=target)
+
+
+def _move(
+    db: Session,
+    room: StudySession,
+    round_: ContrastaRound,
+    user: User,
+    partner: str,
+    activities: list[TeachBackActivity],
+    check: ContrastaCheck | None,
+    reactions: list[ContrastaReaction],
+    my_prediction: str | None,
+) -> MoveRead | None:
+    if round_.finished_at is not None or room.status.value != "active":
+        return None
+    present = _partner_present(db, room.id, round_, user.id)
+    answered = contrasta_service.answered_ids(db, round_.id)
+    if not _is_revealed(round_):
+        if not present:
+            return MoveRead(mine=False, text=f"{partner} has left: you can cancel this round", target=f"round:{round_.id}")
+        if user.id not in answered:
+            return MoveRead(mine=True, text="Your move: send your answer", target=f"round:{round_.id}")
+        if my_prediction is None:
+            return MoveRead(mine=False, text=f"While you wait: predict {partner}'s answer", target=f"voice:predict:{round_.id}")
+        return MoveRead(mine=False, text=f"Waiting for {partner} to answer", target=f"round:{round_.id}")
+
+    if not present:
+        return MoveRead(mine=False, text=f"{partner} has left: you can finish this round", target=None)
+    open_activity = next((a for a in activities if a.status in OPEN_ACTIVITY), None)
+    if open_activity is not None:
+        return _activity_move(db, open_activity, user, partner)
+    if check is not None:
+        mine = db.scalar(
+            select(ContrastaCheckAnswer.id).where(ContrastaCheckAnswer.check_id == check.id, ContrastaCheckAnswer.user_id == user.id)
+        )
+        if mine is None:
+            return MoveRead(mine=True, text="Your move: answer the new question", target=f"check:{round_.id}")
+    if round_.conclusion is not None and round_.conclusion_confirmed_at is None:
+        if round_.conclusion_by_id == user.id:
+            return MoveRead(mine=False, text=f"Waiting for {partner} to confirm your conclusion", target=f"conclusion:{round_.id}")
+        return MoveRead(mine=True, text=f"Your move: do you agree with {partner}'s conclusion?", target=f"conclusion:{round_.id}")
+    if not any(reaction.user_id == user.id for reaction in reactions):
+        return MoveRead(mine=True, text=f"Your move: react to {partner}'s answer", target=f"reveal:{round_.id}")
+    if round_.conclusion is None:
+        return MoveRead(mine=False, text="Keep debating: record a conclusion when you agree", target=None)
+    return MoveRead(mine=False, text="Keep going: practice an explanation or try a new question", target=None)
+
+
+def _welcome(db: Session, room: StudySession, user: User, round_: ContrastaRound | None) -> WelcomeRead | None:
+    """Invita a empezar, sin obligar: quien no quiera puede cerrarlo y seguir hablando."""
+    if room.status.value != "active" or (round_ is not None and contrasta_service.is_active_round(round_)):
+        return None
+    people = contrasta_service.active_participants(db, room.id)
+    if len(people) < 2:
+        return None
+    key = f"welcome:{round_.id if round_ else room.id}"
+    if round_ is not None and contrasta_service.is_pair_round(round_):
+        return WelcomeRead(key=key, text="Ready for another question? Start a round whenever you like.")
+    names = [name for id_, name in people if id_ != user.id]
+    who = names[0] if len(names) == 1 else "the others"
+    return WelcomeRead(key=key, text=f"You and {who} are here. What do you want to figure out together?")
+
+
 def _read_comparison(db: Session, round_: ContrastaRound) -> ComparisonRead | None:
     row = db.scalar(
         select(ContrastaComparison)
@@ -319,7 +512,17 @@ def _read_check(db: Session, check: ContrastaCheck, round_: ContrastaRound, user
 
 
 def _flow(db: Session, room: StudySession, user: User, round_: ContrastaRound | None) -> FlowRead:
-    empty = {"comparison": None, "cards": [], "activities": [], "check": None, "suggestion": None, "step": None}
+    empty = {
+        "comparison": None,
+        "cards": [],
+        "activities": [],
+        "check": None,
+        "suggestion": None,
+        "step": None,
+        "voice": [],
+        "move": None,
+        "welcome": _welcome(db, room, user, round_),
+    }
     if round_ is None or not contrasta_service.is_pair_round(round_):
         return FlowRead(round=None, other_pair_in_progress=False, actions=_actions(db, room, user, round_, []), **empty)
     if not contrasta_service.in_pair(round_, user.id):
@@ -349,6 +552,10 @@ def _flow(db: Session, room: StudySession, user: User, round_: ContrastaRound | 
         )
     activities = _activities(db, round_.id)
     check = _check(db, round_.id)
+    reactions = _reactions(db, round_.id) if _is_revealed(round_) else []
+    prediction_rows = _predictions(db, round_.id)
+    my_prediction = next((row.text for row in prediction_rows if row.user_id == user.id), None)
+    partner_name = names.get(partner_id) or "Your partner"
     return FlowRead(
         round=FlowRound(
             id=round_.id,
@@ -366,6 +573,11 @@ def _flow(db: Session, room: StudySession, user: User, round_: ContrastaRound | 
             conclusion=conclusion,
             finish_requested_by_me=round_.finish_requested_by_id == user.id,
             finish_requested_by_partner=round_.finish_requested_by_id == partner_id,
+            my_prediction=my_prediction,
+            predictions=[]
+            if not _is_revealed(round_)
+            else [PredictionRead(person=_person(names, row.user_id), text=row.text) for row in prediction_rows],
+            reactions=[ReactionRead(person=_person(names, row.user_id), kind=row.kind) for row in reactions],
         ),
         other_pair_in_progress=False,
         comparison=_read_comparison(db, round_),
@@ -375,6 +587,9 @@ def _flow(db: Session, room: StudySession, user: User, round_: ContrastaRound | 
         suggestion=_suggestion(round_, activities, check),
         step=_step(round_, activities, check),
         actions=_actions(db, room, user, round_, activities),
+        voice=_voice(db, round_, user, partner_name, activities, check, reactions),
+        move=_move(db, room, round_, user, partner_name, activities, check, reactions, my_prediction),
+        welcome=_welcome(db, room, user, round_),
     )
 
 
@@ -386,6 +601,36 @@ def get_flow(db: Session, user: User, room_id: UUID) -> FlowRead:
 def _commit_and_read(db: Session, room: StudySession, user: User, round_: ContrastaRound) -> FlowRead:
     db.commit()
     return _flow(db, room, user, round_)
+
+
+# Participación entre pares
+
+
+def save_prediction(db: Session, user: User, room_id: UUID, text: str) -> FlowRead:
+    room, round_ = _active_pair_round(db, user, room_id)
+    if _is_revealed(round_):
+        raise InvalidActionError("The answers are already revealed")
+    if user.id not in contrasta_service.answered_ids(db, round_.id):
+        raise InvalidActionError("Send your answer first")
+    if any(row.user_id == user.id for row in _predictions(db, round_.id)):
+        raise InvalidActionError("You have already made your prediction")
+    db.add(ContrastaPrediction(round_id=round_.id, user_id=user.id, text=text))
+    return _commit_and_read(db, room, user, round_)
+
+
+def react(db: Session, user: User, room_id: UUID, kind: str) -> FlowRead:
+    """Cambiar de reacción la sustituye; repetir la misma no genera otro mensaje."""
+    room, round_ = _revealed_pair_round(db, user, room_id)
+    row = db.scalar(
+        select(ContrastaReaction).where(ContrastaReaction.round_id == round_.id, ContrastaReaction.user_id == user.id)
+    )
+    now = datetime.now(timezone.utc)
+    if row is None:
+        db.add(ContrastaReaction(round_id=round_.id, user_id=user.id, kind=kind, updated_at=now))
+    elif row.kind != kind:
+        row.kind = kind
+        row.updated_at = now
+    return _commit_and_read(db, room, user, round_)
 
 
 # Fin de la ronda

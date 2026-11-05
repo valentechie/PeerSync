@@ -18,6 +18,8 @@ from app.schemas.contrasta_flow import (
     FeedbackCreate,
     FlowRead,
     HelpCreate,
+    PredictionCreate,
+    ReactionCreate,
     ReviewCreate,
 )
 from app.services import contrasta_flow_service as flow
@@ -55,6 +57,20 @@ def flow_errors() -> Iterator[None]:
 def get_flow(request: Request, room_id: UUID, user: CurrentUser, db: DbSession) -> FlowRead:
     with flow_errors():
         return flow.get_flow(db, user, room_id)
+
+
+@router.post("/prediction", response_model=FlowRead)
+@limiter.limit("30/minute")
+def save_prediction(request: Request, room_id: UUID, data: PredictionCreate, user: CurrentUser, db: DbSession) -> FlowRead:
+    with flow_errors():
+        return flow.save_prediction(db, user, room_id, data.text)
+
+
+@router.post("/reaction", response_model=FlowRead)
+@limiter.limit("30/minute")
+def react(request: Request, room_id: UUID, data: ReactionCreate, user: CurrentUser, db: DbSession) -> FlowRead:
+    with flow_errors():
+        return flow.react(db, user, room_id, data.kind)
 
 
 @router.post("/round/cancel", response_model=FlowRead)

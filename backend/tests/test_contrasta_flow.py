@@ -540,3 +540,123 @@ def test_room_without_round_keeps_working(client, room_id, ana):
     flow = _flow(client, room_id, ana)
     assert flow["round"] is None
     assert client.post(f"{ROOMS}/{room_id}/messages", json={"content": "Hola"}, headers=ana).status_code == 201
+
+
+# Voz de Contrasta, turno y participación
+
+
+def _voice_texts(flow):
+    return [item["text"] for item in flow["voice"]]
+
+
+def test_welcome_invites_two_people_and_not_someone_alone(client, room_id, ana, auth_headers):
+    flow = _flow(client, room_id, ana)
+    assert flow["welcome"]["text"] == "You and Luis Nombre are here. What do you want to figure out together?"
+    solo = auth_headers(email="solo2@hack4edu.org", name="Solo")
+    id_ = client.post(ROOMS, json={"title": "Sola", "objective": ""}, headers=solo).json()["id"]
+    assert _flow(client, id_, solo)["welcome"] is None
+
+
+def test_voice_tells_who_moves_and_never_shows_the_partner_answer(client, room_id, ana, luis):
+    _start(client, room_id, ana, luis)
+    assert _flow(client, room_id, ana)["move"]["mine"] is True
+    client.post(_url(room_id, "/answers"), json={"answer": SECRET_A}, headers=ana)
+    ana_flow, luis_flow = _flow(client, room_id, ana), _flow(client, room_id, luis)
+    assert any(text.startswith("While you wait") for text in _voice_texts(ana_flow))
+    assert ana_flow["move"]["mine"] is False
+    assert any("Ana Nombre has answered" in text for text in _voice_texts(luis_flow))
+    assert luis_flow["move"]["text"] == "Your move: send your answer"
+    assert SECRET_A not in json.dumps(luis_flow)
+
+
+def test_voice_is_stable_across_polls_without_duplicates(client, room_id, ana, luis):
+    _revealed(client, room_id, ana, luis)
+    first = _flow(client, room_id, ana)["voice"]
+    second = _flow(client, room_id, ana)["voice"]
+    assert first == second
+    keys = [item["key"] for item in first]
+    assert len(keys) == len(set(keys))
+
+
+def test_voice_never_claims_a_difference_on_reveal(client, room_id, ana, luis):
+    _revealed(client, room_id, ana, luis)
+    assert not any("differently" in text.lower() for text in _voice_texts(_flow(client, room_id, ana)))
+
+
+def test_voice_does_not_depend_on_the_chat(client, room_id, ana, luis):
+    _revealed(client, room_id, ana, luis)
+    before = _flow(client, room_id, ana)["voice"]
+    client.post(f"{ROOMS}/{room_id}/messages", json={"content": "I am confused and stuck"}, headers=ana)
+    assert _flow(client, room_id, ana)["voice"] == before
+
+
+def test_prediction_stays_private_until_the_reveal_and_never_reaches_the_ai(client, room_id, ana, luis, deepseek):
+    calls, _ = deepseek
+    _start(client, room_id, ana, luis)
+    assert client.post(_url(room_id, "/prediction"), json={"text": "x"}, headers=ana).status_code == 409
+    client.post(_url(room_id, "/answers"), json={"answer": SECRET_A}, headers=ana)
+    assert client.post(_url(room_id, "/prediction"), json={"text": "PREDICCION-ANA"}, headers=ana).status_code == 200
+    assert client.post(_url(room_id, "/prediction"), json={"text": "otra"}, headers=ana).status_code == 409
+    assert _flow(client, room_id, ana)["round"]["myPrediction"] == "PREDICCION-ANA"
+    assert "PREDICCION-ANA" not in client.get(_url(room_id, "/flow"), headers=luis).text
+    client.post(_url(room_id, "/answers"), json={"answer": SECRET_B}, headers=luis)
+    assert _flow(client, room_id, luis)["round"]["predictions"][0]["text"] == "PREDICCION-ANA"
+    assert client.post(_url(room_id, "/prediction"), json={"text": "tarde"}, headers=luis).status_code == 409
+    client.post(_url(room_id, "/comparison"), headers=ana)
+    assert "PREDICCION-ANA" not in json.dumps(calls)
+
+
+def test_cancelled_round_never_shows_the_prediction(client, room_id, ana, luis):
+    _start(client, room_id, ana, luis)
+    client.post(_url(room_id, "/answers"), json={"answer": SECRET_A}, headers=ana)
+    client.post(_url(room_id, "/prediction"), json={"text": "PREDICCION-ANA"}, headers=ana)
+    client.post(_url(room_id, "/round/cancel"), headers=luis)
+    assert "PREDICCION-ANA" not in client.get(_url(room_id, "/flow"), headers=luis).text
+
+
+def test_reaction_needs_the_reveal_and_prompts_the_partner_once(client, room_id, ana, luis):
+    _start(client, room_id, ana, luis)
+    assert client.post(_url(room_id, "/reaction"), json={"kind": "doubt"}, headers=ana).status_code == 409
+    client.post(_url(room_id, "/answers"), json={"answer": "a"}, headers=ana)
+    client.post(_url(room_id, "/answers"), json={"answer": "b"}, headers=luis)
+    assert _flow(client, room_id, ana)["move"]["text"] == "Your move: react to Luis Nombre's answer"
+    for _ in range(2):
+        assert client.post(_url(room_id, "/reaction"), json={"kind": "doubt"}, headers=ana).status_code == 200
+    voices = [t for t in _voice_texts(_flow(client, room_id, luis)) if "doubts your reasoning" in t]
+    assert voices == ["Ana Nombre doubts your reasoning. Can you defend it?"]
+    assert not any("doubts" in t for t in _voice_texts(_flow(client, room_id, ana)))
+    client.post(_url(room_id, "/reaction"), json={"kind": "agree"}, headers=ana)
+    flow = _flow(client, room_id, luis)
+    assert [r["kind"] for r in flow["round"]["reactions"]] == ["agree"]
+    assert not any("doubts" in t for t in _voice_texts(flow))
+    assert client.post(_url(room_id, "/reaction"), json={"kind": "winner"}, headers=ana).status_code == 422
+
+
+def test_third_person_cannot_predict_react_or_see_the_voice(client, room_id, ana, luis, eva):
+    assert join_room(client, room_id, eva).status_code == 200
+    _revealed(client, room_id, ana, luis)
+    assert client.post(_url(room_id, "/reaction"), json={"kind": "agree"}, headers=eva).status_code == 403
+    assert client.post(_url(room_id, "/prediction"), json={"text": "x"}, headers=eva).status_code == 403
+    flow = _flow(client, room_id, eva)
+    assert flow["voice"] == [] and flow["move"] is None and flow["welcome"] is None
+
+
+def test_move_follows_the_activity_and_reaction_is_optional(client, room_id, ana, luis):
+    activity_id = _active_activity(client, room_id, ana, luis)
+    assert _flow(client, room_id, ana)["move"]["text"] == "Your move: explain it in your own words"
+    assert _flow(client, room_id, luis)["move"]["mine"] is False
+    client.post(_url(room_id, f"/activities/{activity_id}/explanation"), json={"explanation": "E"}, headers=ana)
+    assert _flow(client, room_id, luis)["move"]["mine"] is True
+    assert any("has explained" in text for text in _voice_texts(_flow(client, room_id, luis)))
+    client.post(_url(room_id, f"/activities/{activity_id}/review"), json={"comment": "R"}, headers=luis)
+    assert any("reviewed your explanation" in text for text in _voice_texts(_flow(client, room_id, ana)))
+
+
+def test_finished_round_invites_to_start_again(client, room_id, ana, luis):
+    _revealed(client, room_id, ana, luis)
+    client.post(_url(room_id, "/round/finish"), headers=ana)
+    client.post(_url(room_id, "/round/finish"), headers=luis)
+    flow = _flow(client, room_id, ana)
+    assert flow["move"] is None
+    assert flow["welcome"]["text"].startswith("Ready for another question?")
+    assert any(text.startswith("Round finished") for text in _voice_texts(flow))

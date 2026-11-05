@@ -7,6 +7,8 @@ export interface Person {
   name: string;
 }
 
+export type ReactionKind = 'agree' | 'doubt' | 'convince';
+
 export type ActionKey = 'start' | 'hint' | 'idea' | 'practice' | 'conclusion';
 
 export interface FlowAction {
@@ -31,6 +33,9 @@ export interface FlowRound {
   conclusion: { text: string; by: Person; at: string; confirmedAt: string | null } | null;
   finishRequestedByMe: boolean;
   finishRequestedByPartner: boolean;
+  myPrediction: string | null;
+  predictions: { person: Person; text: string }[];
+  reactions: { person: Person; kind: ReactionKind }[];
 }
 
 export interface Comparison {
@@ -88,6 +93,13 @@ export interface Check {
   answers: { person: Person; answer: string; reflection: string }[];
 }
 
+export interface Voice {
+  key: string;
+  at: string;
+  kind: 'info' | 'prediction' | 'debate';
+  text: string;
+}
+
 export interface Flow {
   round: FlowRound | null;
   otherPairInProgress: boolean;
@@ -98,6 +110,9 @@ export interface Flow {
   suggestion: { key: 'teachback' | 'check'; at: string } | null;
   step: { number: number; label: string } | null;
   actions: FlowAction[];
+  voice: Voice[];
+  move: { mine: boolean; text: string; target: string | null } | null;
+  welcome: { key: string; text: string } | null;
 }
 
 const base = (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/contrasta`;
@@ -112,6 +127,10 @@ export const startPairRound = (token: string, roomId: string, prompt: string, pa
 export const answerRound = (token: string, roomId: string, answer: string) =>
   apiRequest<unknown>(`${base(roomId)}/answers`, { method: 'POST', body: { answer }, token });
 
+export const savePrediction = (token: string, roomId: string, text: string) =>
+  post(token, `${base(roomId)}/prediction`, { text });
+export const react = (token: string, roomId: string, kind: ReactionKind) =>
+  post(token, `${base(roomId)}/reaction`, { kind });
 export const cancelRound = (token: string, roomId: string) => post(token, `${base(roomId)}/round/cancel`);
 export const finishRound = (token: string, roomId: string) => post(token, `${base(roomId)}/round/finish`);
 export const requestComparison = (token: string, roomId: string) => post(token, `${base(roomId)}/comparison`);

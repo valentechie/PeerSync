@@ -59,6 +59,8 @@ Todas las rutas cuelgan de `/rooms/{id}/contrasta` y devuelven el estado filtrad
 | Método | Ruta | Para qué | Límite |
 |---|---|---|---|
 | GET | `/flow` | Ronda, comparación, tarjetas, actividades, comprobación, sugerencia, paso y acciones del menú | 600/min |
+| POST | `/prediction` con `text` | Predecir la respuesta del compañero tras enviar la propia; oculta hasta revelar y nunca se envía a la IA | 30/min |
+| POST | `/reaction` con `kind` (`agree`, `doubt` o `convince`) | Reaccionar a la respuesta revelada; cambiarla sustituye a la anterior | 30/min |
 | POST | `/round/cancel` | Cancelar antes de revelar: basta uno y las respuestas no se revelan | 30/min |
 | POST | `/round/finish` | Finalizar tras revelar: lo deciden los dos, salvo que el compañero ya no esté | 30/min |
 | POST | `/comparison`, sin cuerpo | Comparar con IA a petición. Una por ronda, compartida; solo recibe la pregunta y las respuestas reveladas | 10/min |
@@ -71,6 +73,8 @@ Todas las rutas cuelgan de `/rooms/{id}/contrasta` y devuelven el estado filtrad
 | POST | `/activities/{id}/advance`, `/skip`, `/leave` | Cambiar de turno o terminar, omitir el segundo turno entre los dos, dejar la actividad | 30/min |
 | POST | `/check` con `question` opcional | Comprobación individual; sin `question` la propone la IA, identificada como tal | 10/min |
 | POST | `/check/answer` con `answer` y `reflection` opcional | Respuesta oculta hasta que respondan los dos. Sin nota ni corrección | 30/min |
+
+`FlowRead` incluye además `voice` (mensajes de Contrasta con clave estable), `move` (a quién le toca) y `welcome` (invitación a empezar). Son texto fijo calculado a partir del estado guardado para cada persona: no usan IA, no leen el chat ni interpretan silencios.
 
 ## IA de la sala
 

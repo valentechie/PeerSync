@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Lightbulb, Loader2, Scale, Search } from 'lucide-react';
+import { Check, CheckCircle2, Lightbulb, Loader2, Scale, Search } from 'lucide-react';
 import {
   answerCheck,
   answerRound,
@@ -8,6 +8,7 @@ import {
   createCheck,
   finishRound,
   proposeActivity,
+  react,
   recordConclusion,
   requestComparison,
   requestHelp,
@@ -16,6 +17,7 @@ import {
   type Flow,
   type HelpCard,
   type Person,
+  type ReactionKind,
 } from '../services/contrastaFlow';
 import { ErrorState } from './UIStates';
 import { useDraft, useFlowAction, useFlowContext, type FormKey } from './contrastaFlowContext';
@@ -55,7 +57,6 @@ export const RoundCard: React.FC<{ flow: Flow }> = ({ flow }) => {
       {cancelled && <p className={GUIDANCE}>This round was cancelled. The answers stay hidden.</p>}
       {!cancelled && round.status === 'individual' && (
         <>
-          <p className={GUIDANCE}>First, each of you will answer independently. Your partner won't see your answer yet.</p>
           {round.myAnswer === null && !readOnly ? (
             <form
               onSubmit={e => {
@@ -144,9 +145,44 @@ const ComparisonBlock: React.FC<{ comparison: Comparison | null }> = ({ comparis
   );
 };
 
+const REACTIONS: Record<ReactionKind, string> = {
+  agree: 'I agree',
+  doubt: 'I doubt this',
+  convince: 'Convince me',
+};
+
+const PartnerReactions: React.FC<{ flow: Flow }> = ({ flow }) => {
+  const { token, roomId, userId } = useFlowContext();
+  const { busy, error, run } = useFlowAction();
+  const round = flow.round!;
+  const mine = round.reactions.find(reaction => reaction.person.id === userId)?.kind;
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={`React to ${round.partner.name}'s answer`}>
+        {(Object.keys(REACTIONS) as ReactionKind[]).map(kind => (
+          <button
+            key={kind}
+            type="button"
+            aria-pressed={mine === kind}
+            disabled={busy}
+            onClick={() => void run(() => react(token, roomId, kind))}
+            className={`chip inline-flex items-center gap-1 cursor-pointer ${mine === kind ? 'chip-teach' : 'bg-surface border border-line'}`}
+          >
+            {mine === kind && <Check className="w-3 h-3" aria-hidden="true" />}
+            <span>{REACTIONS[kind]}</span>
+          </button>
+        ))}
+      </div>
+      {error && <ErrorState message={error} />}
+    </div>
+  );
+};
+
 export const RevealCard: React.FC<{ flow: Flow }> = ({ flow }) => {
   const { userId, readOnly } = useFlowContext();
   const round = flow.round!;
+  const predictionBy = (id: string) => round.predictions.find(item => item.person.id === id)?.text;
+  const reactionTo = (id: string) => round.reactions.find(item => item.person.id !== id)?.kind;
   return (
     <article className={CARD} aria-label="Revealed answers">
       <ContrastaChip />
@@ -156,10 +192,18 @@ export const RevealCard: React.FC<{ flow: Flow }> = ({ flow }) => {
           <li key={answer.userId} className="rounded-xl bg-teach-soft p-3 space-y-1">
             <p className="font-bold truncate">{answer.userId === userId ? 'You' : answer.name}</p>
             <p className="whitespace-pre-wrap break-words">{answer.answer}</p>
+            {predictionBy(answer.userId === userId ? round.partner.id : userId) && (
+              <p className="text-xs text-muted whitespace-pre-wrap break-words">
+                {answer.userId === userId ? `${round.partner.name} predicted` : 'You predicted'}: {predictionBy(answer.userId === userId ? round.partner.id : userId)}
+              </p>
+            )}
+            {answer.userId === userId && reactionTo(userId) && (
+              <p className="text-xs font-bold">{round.partner.name}: {REACTIONS[reactionTo(userId)!]}</p>
+            )}
+            {answer.userId !== userId && !readOnly && !round.finishedAt && <PartnerReactions flow={flow} />}
           </li>
         ))}
       </ul>
-      {!readOnly && !round.finishedAt && <p className={GUIDANCE}>Need another perspective? You can request a hint or a way to test your ideas.</p>}
       <ComparisonBlock comparison={flow.comparison} />
     </article>
   );
@@ -229,7 +273,7 @@ export const ConclusionCard: React.FC<{ flow: Flow }> = ({ flow }) => {
             ) : (
               <>
                 <button type="button" onClick={() => void run(() => confirmConclusion(token, roomId))} disabled={busy} className="btn btn-primary w-full">
-                  I agree
+                  Confirm conclusion
                 </button>
                 <p className="text-xs text-muted">Not quite? Talk it over, or record another one from the menu.</p>
               </>

@@ -14,6 +14,7 @@ export interface FlowContextValue {
   refresh: () => Promise<void>;
   openForm: (form: FormKey) => void;
   focusComposer: () => void;
+  insertInComposer: (text: string) => void;
 }
 
 export type FormKey = 'start' | 'hint' | 'idea' | 'practice' | 'conclusion' | 'check';

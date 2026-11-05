@@ -259,3 +259,30 @@ class ContrastaCheckAnswer(Base):
     answer: Mapped[str] = mapped_column(Text)
     reflection: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ContrastaReaction(Base):
+    """Reacción a la respuesta revelada del compañero. Una por persona: cambiarla la sustituye."""
+
+    __tablename__ = "contrasta_reactions"
+    __table_args__ = (UniqueConstraint("round_id", "user_id", name="uq_contrasta_reactions_one_per_user"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    round_id: Mapped[UUID] = mapped_column(ForeignKey("contrasta_rounds.id", ondelete="CASCADE"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    # "agree", "doubt" o "convince".
+    kind: Mapped[str] = mapped_column(String(10))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ContrastaPrediction(Base):
+    """Qué cree cada uno que responderá el otro. Oculta hasta revelar y nunca llega a la IA."""
+
+    __tablename__ = "contrasta_predictions"
+    __table_args__ = (UniqueConstraint("round_id", "user_id", name="uq_contrasta_predictions_one_per_user"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    round_id: Mapped[UUID] = mapped_column(ForeignKey("contrasta_rounds.id", ondelete="CASCADE"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
