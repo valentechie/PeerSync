@@ -10,7 +10,7 @@ from app.schemas.room import AttachmentRead, MessageRead
 from app.services import room_service
 from app.services.photo_service import photo_urls
 
-# Vercel rechaza peticiones y respuestas de más de 4,5 MB.
+# Tamaño máximo por archivo; el frontend aplica el mismo límite.
 MAX_FILE_BYTES = 4 * 1024 * 1024
 MAX_ROOM_BYTES = 100 * 1024 * 1024
 MAX_FILE_NAME_LENGTH = 200

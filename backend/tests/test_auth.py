@@ -128,13 +128,13 @@ def _request(forwarded_for):
     return Request({"type": "http", "headers": headers, "client": ("10.0.0.1", 1)})
 
 
-def test_on_vercel_rate_limit_uses_visitor_ip(monkeypatch):
-    monkeypatch.setenv("VERCEL", "1")
+def test_behind_a_trusted_proxy_rate_limit_uses_visitor_ip(monkeypatch):
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
 
     assert security.client_ip(_request("203.0.113.1, 10.0.0.2")) == "203.0.113.1"
 
 
-def test_outside_vercel_forwarded_header_is_ignored(monkeypatch):
-    monkeypatch.delenv("VERCEL", raising=False)
+def test_without_a_trusted_proxy_forwarded_header_is_ignored(monkeypatch):
+    monkeypatch.delenv("TRUST_FORWARDED_FOR", raising=False)
 
     assert security.client_ip(_request("203.0.113.1")) == "10.0.0.1"

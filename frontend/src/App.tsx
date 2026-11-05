@@ -35,7 +35,7 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />

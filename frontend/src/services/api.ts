@@ -1,5 +1,5 @@
-// En producción la API comparte dominio con el frontend.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '/api' : 'http://localhost:8000/api');
+// La web y la API se despliegan por separado: en producción se indica con VITE_API_BASE_URL.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 export class ApiError extends Error {
   readonly status: number;

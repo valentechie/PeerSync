@@ -161,7 +161,7 @@ export const Room: React.FC = () => {
   useEffect(() => {
     if (!token || !roomId || roomIsClosed) return;
     fetchInviteLink(token, roomId)
-      .then(link => setInviteUrl(`${window.location.origin}/rooms/${roomId}?invite=${encodeURIComponent(link.token)}`))
+      .then(link => setInviteUrl(`${window.location.origin}${import.meta.env.BASE_URL}rooms/${roomId}?invite=${encodeURIComponent(link.token)}`))
       .catch(() => undefined);
   }, [token, roomId, roomIsClosed]);
 

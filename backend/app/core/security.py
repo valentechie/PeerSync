@@ -20,15 +20,15 @@ ROOM_INVITE_DAYS = 7
 
 
 def client_ip(request: Request) -> str:
-    # Vercel sobrescribe X-Forwarded-For, así que allí es fiable. Fuera de Vercel la
-    # cabecera la controla el cliente y permitiría saltarse el límite.
-    forwarded_for = request.headers.get("x-forwarded-for") if os.environ.get("VERCEL") else None
+    # Solo es fiable si un proxy propio sobrescribe X-Forwarded-For: se activa con
+    # TRUST_FORWARDED_FOR. Si no, la cabecera la controla el cliente y podría saltarse el límite.
+    forwarded_for = request.headers.get("x-forwarded-for") if os.environ.get("TRUST_FORWARDED_FOR") else None
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
     return get_remote_address(request)
 
 
-# Contador en memoria y por proceso: en Vercel cada instancia lleva su propia cuenta,
+# Contador en memoria y por proceso: con varias instancias, cada una lleva su propia cuenta,
 # así que el límite es orientativo. Un límite estricto exigiría un almacén compartido.
 limiter = Limiter(key_func=client_ip)
 
