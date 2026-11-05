@@ -12,6 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import get_settings
 from app.core.database import Base, get_db
 from app.core.security import create_room_invite_token, limiter
 from app.main import app
@@ -19,6 +20,12 @@ from app.main import app
 # SQLite por defecto; TEST_DATABASE_URL permite ejecutar contra un Postgres
 # desechable. OJO: borra todas las tablas de esa base de datos.
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite://")
+
+
+@pytest.fixture(autouse=True)
+def no_real_deepseek(monkeypatch):
+    """Ninguna prueba usa una clave real, aunque exista en backend/.env."""
+    monkeypatch.setattr(get_settings(), "deepseek_api_key", "")
 
 
 @pytest.fixture

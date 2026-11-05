@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, Flag, Lightbulb, Link2, LogOut, MessageSquareQuote, Paperclip, Send, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, Check, Flag, Link2, LogOut, Paperclip, Send, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, errorMessage } from '../services/api';
 import { fetchFriends, type FriendStatus } from '../services/people';
@@ -10,6 +10,9 @@ import { Avatar } from '../components/Swap';
 import { FriendButton } from '../components/FriendButton';
 import { AttachmentView } from '../components/AttachmentView';
 import { InviteDialog } from '../components/InviteDialog';
+import { ContrastaPanel } from '../components/ContrastaPanel';
+import { StudyMindPanel } from '../components/StudyMindPanel';
+import { TeachBackPanel } from '../components/TeachBackPanel';
 import { findYouTubeId, YouTubeEmbed } from '../components/YouTubeEmbed';
 
 const POLL_INTERVAL_MS = 3000;
@@ -297,6 +300,8 @@ export const Room: React.FC = () => {
         </section>
 
         <aside className="space-y-6" aria-label="Información de la sala">
+          {!room.isClosed && <ContrastaPanel roomId={id} />}
+
           <section className="card p-5 space-y-4">
             <h2 className="text-lg text-ink flex items-center gap-2">
               <Users className="w-5 h-5 text-teach" aria-hidden="true" />
@@ -355,21 +360,12 @@ export const Room: React.FC = () => {
             )}
           </section>
 
-          <section className="card p-5 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg text-ink">Apoyo de IA</h2>
-              <span className="chip chip-demo">Próximamente</span>
-            </div>
-            <p className="text-sm text-muted">Tus compañeros van primero. La IA ayudará solo cuando se lo pidas.</p>
-            <p className="text-sm text-muted flex gap-2">
-              <Lightbulb className="w-4 h-4 text-guide shrink-0 mt-0.5" aria-hidden="true" />
-              <span><strong className="text-ink">StudyMind:</strong> pistas progresivas sin dar la solución.</span>
-            </p>
-            <p className="text-sm text-muted flex gap-2">
-              <MessageSquareQuote className="w-4 h-4 text-guide shrink-0 mt-0.5" aria-hidden="true" />
-              <span><strong className="text-ink">TeachBack:</strong> explica un concepto y recibe opinión de un compañero.</span>
-            </p>
-          </section>
+          {!room.isClosed && (
+            <>
+              <StudyMindPanel roomId={id} />
+              <TeachBackPanel roomId={id} />
+            </>
+          )}
         </aside>
       </div>
     </div>

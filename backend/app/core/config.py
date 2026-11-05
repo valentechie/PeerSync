@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Sin clave, el entrenamiento con IA responde que no está configurado.
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash-lite"
+    # Sin clave real, la IA de la sala recurre a preguntas preparadas y la sala sigue funcionando.
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-flash"
 
     @field_validator("database_url")
     @classmethod

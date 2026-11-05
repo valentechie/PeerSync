@@ -38,6 +38,43 @@ Archivos: PNG, JPEG, GIF, WebP, MP3, OGG, WAV, M4A, MP4, WebM y PDF, hasta 4 MB 
 
 Sala: `{"id", "title", "objective", "participantCount", "isMember", "lastActivityAt"}`, más `participants` con `id` y `name`. Nunca incluye emails.
 
+## Contrasta
+
+Rondas dentro de una sala: cada persona responde por separado y las respuestas se revelan a la vez cuando han respondido todos los participantes actuales, con un mínimo de dos. Hasta entonces, el backend solo publica quién ha respondido, nunca qué.
+
+| Método | Ruta | Respuestas | Límite |
+|---|---|---|---|
+| GET | `/rooms/{id}/contrasta` | `200` `{"round"}`, o `null` sin rondas · `403` · `404` | 600/min por IP |
+| POST | `/rooms/{id}/contrasta/rounds` con `prompt` (hasta 2000) | `201` · `403` · `404` · `409` ya hay una ronda en marcha o sala cerrada · `422` | 30/min por IP |
+| POST | `/rooms/{id}/contrasta/answers` con `answer` (hasta 2000) | `201` · `403` · `404` · `409` sin ronda abierta, respuesta ya enviada o sala cerrada · `422` | 30/min por IP |
+
+`round`: `id`, `prompt`, `status` (`individual` o `revealed`), `createdAt`, `revealedAt`, `answeredBy`, `waitingForCount`, `myAnswer` y `answers`, vacía hasta revelar. Si quien faltaba por responder sale de la sala, la ronda se revela en la siguiente consulta; la respuesta de quien salió antes de revelar no se publica.
+
+## IA de la sala
+
+La invoca siempre el backend con DeepSeek (`DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`). Practicar sigue usando Gemini. Toda salida del modelo se valida antes de devolverla. Al modelo no llegan nombres, correos ni tokens, y el texto de los estudiantes va como datos no confiables.
+
+| Método | Ruta | Respuestas | Límite |
+|---|---|---|---|
+| POST | `/rooms/{id}/ai/facilitate`, sin cuerpo | `200` intervención · `403` · `404` · `409` aún no se han revelado las respuestas | 10/min por IP |
+| POST | `/rooms/{id}/ai/studymind` con `difficulty` (hasta 1000) y `step` (1 a 6) | `200` ayuda · `403` · `404` · `409` cerrada · `422` | 10/min por IP |
+| POST | `/rooms/{id}/teachback/{submissionId}/ai-feedback`, sin cuerpo | `200` sugerencias · `403` · `404` · `409` sin revisión de un compañero · `503` IA no disponible | 10/min por IP |
+
+- **Facilitate:** devuelve `source`, `kind` (`evidence_check`, `edge_case`, `missing_information` u `open_question`), `messageToPeers`, `suggestedAction`, `evidenceNeeded` y `uncertaintyNote`. El contexto sale de la base de datos: el enunciado, las respuestas reveladas y hasta 20 mensajes posteriores a la revelación.
+- **StudyMind:** devuelve `source`, `step`, `message`, `suggestedAction` y `uncertaintyNote`. Solo recibe el tema y la dificultad escrita; nunca infiere un bloqueo.
+- **Sin IA:** si la IA falla o no está configurada, facilitate y StudyMind responden `200` con `source: "fallback"` y contenido preparado, que el frontend identifica como tal.
+- **Sin guardar:** las intervenciones no se guardan, así que solo las ve quien las pide.
+
+## TeachBack
+
+Un participante explica un concepto, otro lo revisa y solo después se pueden pedir sugerencias a la IA. Son formativas: no incluyen notas ni una explicación reescrita.
+
+| Método | Ruta | Respuestas | Límite |
+|---|---|---|---|
+| GET | `/rooms/{id}/teachback` | `200` últimas 20 explicaciones con su revisión · `403` · `404` | 600/min por IP |
+| POST | `/rooms/{id}/teachback` con `concept` (hasta 200) y `explanation` (hasta 4000) | `201` · `403` · `404` · `409` cerrada · `422` | 30/min por IP |
+| POST | `/rooms/{id}/teachback/{submissionId}/review` con `comment` (hasta 4000) | `201` · `403` también si es tu explicación · `404` · `409` ya revisada o sala cerrada · `422` | 30/min por IP |
+
 ## Invitaciones
 
 Cualquier participante de una sala abierta puede invitar a amigos o a otros usuarios. Invitar no mete a nadie en la sala: la otra persona decide. Una invitación rechazada no se puede repetir en esa sala.

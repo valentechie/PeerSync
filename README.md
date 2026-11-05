@@ -21,6 +21,7 @@ npm run dev
 1. Importa el repositorio en Vercel y deja **Root Directory** en la raíz.
 2. Añade la variable de entorno `DATABASE_URL`, con la cadena **Transaction pooler** de Supabase (puerto `6543`).
 3. Para el apartado Practicar, añade también `GEMINI_API_KEY`. Sin ella, ese apartado avisa de que no está configurado.
+4. Para la IA de la sala (Contrasta, StudyMind y TeachBack), añade `DEEPSEEK_API_KEY`. Sin ella, la sala sigue funcionando: Contrasta y StudyMind muestran preguntas preparadas, identificadas como tales, y TeachBack conserva la revisión del compañero, pero avisa de que no hay sugerencias de IA.
 
 **Modo demo:** el login no comprueba credenciales, así que cualquiera puede entrar como cualquier usuario. No lo uses con datos reales.
 

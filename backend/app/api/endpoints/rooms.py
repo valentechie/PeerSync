@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Annotated
 from urllib.parse import quote
 from uuid import UUID
@@ -25,6 +27,19 @@ PENDING_FEEDBACK = HTTPException(
 )
 NOT_INVITED = HTTPException(status.HTTP_403_FORBIDDEN, "Esta sala es privada: necesitas una invitación")
 FILE_TOO_LARGE = HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "El archivo no puede superar los 4 MB")
+
+
+@contextmanager
+def room_errors() -> Iterator[None]:
+    """Traduce a HTTP los errores de acceso a una sala."""
+    try:
+        yield
+    except RoomNotFoundError as exc:
+        raise ROOM_NOT_FOUND from exc
+    except NotARoomMemberError as exc:
+        raise NOT_A_MEMBER from exc
+    except RoomClosedError as exc:
+        raise ROOM_CLOSED from exc
 
 
 async def read_limited_body(request: Request) -> bytes:
