@@ -10,7 +10,7 @@ React + TypeScript + Vite + Tailwind; Python + FastAPI; PostgreSQL;
 WebSockets cuando hagan falta; Gemini API solo desde backend;
 Modo demo sin comprobar credenciales y JWT propio; Git.
 No cambies el stack sin explicar el motivo y pedir aprobación.
-ARQUITECTURA Y UX
+ARQUITECTURA Y UX.
 Separa páginas, componentes, features, servicios, modelos, esquemas,
 endpoints y lógica de negocio. Navegación: Inicio, Buscar compañeros,
 Mis sesiones, Mi progreso y Mi perfil. Diseño limpio, accesible y responsive.
