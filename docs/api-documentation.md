@@ -50,6 +50,28 @@ Rondas dentro de una sala: cada persona responde por separado y las respuestas s
 
 `round`: `id`, `prompt`, `status` (`individual` o `revealed`), `createdAt`, `revealedAt`, `answeredBy`, `waitingForCount`, `myAnswer` y `answers`, vacía hasta revelar. Si quien faltaba por responder sale de la sala, la ronda se revela en la siguiente consulta; la respuesta de quien salió antes de revelar no se publica.
 
+## Contrasta por parejas
+
+Es el recorrido principal de la sala. `POST /rooms/{id}/contrasta/rounds` admite un `partnerId` opcional: con él, la ronda es solo de esa pareja, y sin él sigue las reglas de arriba. La revelación es automática al guardar las dos respuestas, no depende de la IA, y entrar o salir de la sala nunca revela una ronda de pareja. Fuera de la pareja no se devuelven ni respuestas ni comparaciones.
+
+Todas las rutas cuelgan de `/rooms/{id}/contrasta` y devuelven el estado filtrado para quien pide (`FlowRead`). Errores comunes: `403` fuera de la pareja, `404`, `409` si la acción no corresponde al estado, `422` y `503` si falla la IA, sin contenido preparado en su lugar.
+
+| Método | Ruta | Para qué | Límite |
+|---|---|---|---|
+| GET | `/flow` | Ronda, comparación, tarjetas, actividades, comprobación, sugerencia, paso y acciones del menú | 600/min |
+| POST | `/round/cancel` | Cancelar antes de revelar: basta uno y las respuestas no se revelan | 30/min |
+| POST | `/round/finish` | Finalizar tras revelar: lo deciden los dos, salvo que el compañero ya no esté | 30/min |
+| POST | `/comparison`, sin cuerpo | Comparar con IA a petición. Una por ronda, compartida; solo recibe la pregunta y las respuestas reveladas | 10/min |
+| POST | `/help` con `kind` (`hint` o `idea`) y `text` | StudyMind en la ronda. Antes de revelar, solo `hint`, privada y sin remitir al compañero | 10/min |
+| POST | `/conclusion` con `text`, `/conclusion/confirm` | Registrar y confirmar la conclusión compartida | 30/min |
+| POST | `/activities` con `concept` | Proponer TeachBack; queda pendiente del compañero. Una abierta por ronda | 30/min |
+| POST | `/activities/{id}/respond/{accept\|decline\|cancel}` | Responder a la propuesta; repetir la misma decisión no cambia nada | 30/min |
+| POST | `/activities/{id}/explanation`, `/review` | Explicación del turno y revisión de la pareja | 30/min |
+| POST | `/activities/{id}/feedback` con `turn` | Sugerencias de IA opcionales, solo tras la revisión | 10/min |
+| POST | `/activities/{id}/advance`, `/skip`, `/leave` | Cambiar de turno o terminar, omitir el segundo turno entre los dos, dejar la actividad | 30/min |
+| POST | `/check` con `question` opcional | Comprobación individual; sin `question` la propone la IA, identificada como tal | 10/min |
+| POST | `/check/answer` con `answer` y `reflection` opcional | Respuesta oculta hasta que respondan los dos. Sin nota ni corrección | 30/min |
+
 ## IA de la sala
 
 La invoca siempre el backend con DeepSeek (`DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`). Practicar sigue usando Gemini. Toda salida del modelo se valida antes de devolverla. Al modelo no llegan nombres, correos ni tokens, y el texto de los estudiantes va como datos no confiables.

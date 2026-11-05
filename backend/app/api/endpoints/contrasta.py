@@ -28,9 +28,11 @@ def get_state(request: Request, room_id: UUID, user: CurrentUser, db: DbSession)
 def create_round(request: Request, room_id: UUID, data: RoundCreate, user: CurrentUser, db: DbSession) -> ContrastaState:
     with room_errors():
         try:
-            return contrasta_service.create_round(db, user, room_id, data.prompt)
+            return contrasta_service.create_round(db, user, room_id, data.prompt, data.partner_id)
         except contrasta_service.RoundAlreadyOpenError as exc:
             raise HTTPException(status.HTTP_409_CONFLICT, "There is already a round in progress in this room") from exc
+        except contrasta_service.InvalidPartnerError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Your partner must be another person in the room") from exc
 
 
 @router.post("/answers", response_model=ContrastaState, status_code=status.HTTP_201_CREATED)
@@ -43,3 +45,5 @@ def submit_answer(request: Request, room_id: UUID, data: AnswerCreate, user: Cur
             raise HTTPException(status.HTTP_409_CONFLICT, "No round is waiting for answers") from exc
         except contrasta_service.AlreadyAnsweredError as exc:
             raise HTTPException(status.HTTP_409_CONFLICT, "You have already sent your answer in this round") from exc
+        except contrasta_service.NotInRoundPairError as exc:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "This round belongs to another pair") from exc

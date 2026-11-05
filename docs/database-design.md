@@ -28,7 +28,18 @@ Supabase publica el esquema `public` en una API REST. **Toda tabla nueva debe ac
 | `teachback_ai_feedback` | Feedback formativo de IA | `peer_review_id` obligatorio; sin columna de nota |
 | `contrasta_rounds` | Rondas de Contrasta | `status`: `individual` o `revealed` |
 | `contrasta_answers` | Respuestas individuales | Una por usuario y ronda; ocultarlas hasta `revealed` es tarea del servicio |
+| `contrasta_comparisons` | Comparación con IA pedida por la pareja | Una por ronda; `status`: `pending`, `ready` o `failed` |
+| `contrasta_cards` | Pistas y comprobaciones de StudyMind en una ronda | `private` antes de revelar |
+| `teachback_activities` | Propuesta y actividad TeachBack de una pareja | Nace `pending`; turno 1 explica quien propone y turno 2 su pareja |
+| `contrasta_checks` | Comprobación individual | Una por ronda; sin nota ni solución |
+| `contrasta_check_answers` | Respuestas a la comprobación | Ocultas hasta que respondan los dos |
 
 Reputación y sesiones completadas no se almacenan: se calculan a partir de `session_reviews` y `study_sessions`.
 
 Todas las claves foráneas usan `ON DELETE CASCADE`: borrar un usuario borra sus datos.
+
+## Contrasta por parejas (migración `0015`)
+
+Solo añade tablas y columnas opcionales. En `contrasta_rounds`: `pair_a_id` y `pair_b_id` (sin ellas la ronda sigue las reglas de siempre), `conclusion`, `conclusion_by_id`, `conclusion_at`, `conclusion_confirmed_at`, `finish_requested_by_id` y `finished_at`. En `teachback_submissions`: `activity_id` y `turn`; sin `activity_id` es una explicación independiente del panel.
+
+La migración debe aplicarse antes de desplegar este código: el código nuevo lee esas columnas en las rutas de Contrasta y TeachBack.

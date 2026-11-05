@@ -7,7 +7,7 @@ PRODUCTO
 - TeachBack AI: feedback formativo sobre corrección, claridad, completitud y ejemplos.
 STACK
 React + TypeScript + Vite + Tailwind; Python + FastAPI; PostgreSQL;
-WebSockets cuando hagan falta; Gemini API solo desde backend;
+WebSockets cuando hagan falta; DeepSeek solo desde backend (Gemini se mantiene únicamente en Practicar);
 Modo demo sin comprobar credenciales y JWT propio; Git.
 No cambies el stack sin explicar el motivo y pedir aprobación.
 ARQUITECTURA Y UX.
@@ -26,7 +26,7 @@ SEGURIDAD
 - Nunca expongas API keys en frontend.
 - Usa variables de entorno y .env.example sin secretos.
 - Valida autorización en backend para cada recurso privado.
-- Minimiza los datos personales enviados a Gemini.
+- Minimiza los datos personales enviados a los modelos de IA.
 - No registres contraseñas, tokens ni contenido sensible.
 - Valida entradas, limita longitud/frecuencia y gestiona errores.
 - No presentes mocks como integraciones reales.

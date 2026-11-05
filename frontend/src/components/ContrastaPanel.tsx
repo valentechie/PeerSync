@@ -10,6 +10,7 @@ import {
   type ContrastaRound,
   type Facilitation,
 } from '../services/contrasta';
+import { CollapsiblePanel } from './CollapsiblePanel';
 import { ErrorState } from './UIStates';
 
 const POLL_INTERVAL_MS = 3000;
@@ -135,32 +136,43 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
     </form>
   );
 
-  const isRevealed = round?.status === 'revealed';
+  // Las rondas de pareja viven en la conversación; este panel es para comparar sin recorrido guiado.
+  const pairInProgress = Boolean(round?.pairRound && !round.finishedAt);
+  const compareOnlyRound = round?.pairRound ? null : round;
+  const isRevealed = compareOnlyRound?.status === 'revealed';
   const currentIntervention = intervention && intervention.roundId === round?.id ? intervention.content : null;
 
   return (
-    <section className="card p-5 space-y-4" aria-label="Contrasta">
-      <div className="space-y-1">
-        <h2 className="text-lg text-ink flex items-center gap-2">
+    <CollapsiblePanel
+      label="Compare answers only"
+      openWhen={compareOnlyRound?.status === 'individual'}
+      title={
+        <>
           <Scale className="w-5 h-5 text-teach" aria-hidden="true" />
-          <span>Contrasta</span>
-        </h2>
-        <p className="text-sm text-muted">Answer separately and compare once everyone has submitted.</p>
-      </div>
+          <span>Compare answers only</span>
+        </>
+      }
+      badge={compareOnlyRound?.status === 'individual' ? <span className="chip chip-teach">In progress</span> : undefined}
+    >
+      <p className="text-sm text-muted">
+        Everyone in the room answers separately and compares, without guided steps. To learn with a partner, use "Start a round" in the chat menu.
+      </p>
 
       {error && <ErrorState message={error} />}
 
       {!loaded && <p className="text-sm text-muted" role="status">Loading the round...</p>}
 
-      {loaded && !round && startForm}
+      {pairInProgress && <p className="text-sm font-bold">A pair round is in progress in the conversation.</p>}
 
-      {round && (
-        <p className="text-sm font-bold whitespace-pre-wrap break-words">{round.prompt}</p>
+      {loaded && !pairInProgress && !compareOnlyRound && startForm}
+
+      {compareOnlyRound && (
+        <p className="text-sm font-bold whitespace-pre-wrap break-words">{compareOnlyRound.prompt}</p>
       )}
 
-      {round && !isRevealed && (
+      {compareOnlyRound && !isRevealed && (
         <>
-          {round.myAnswer === null ? (
+          {compareOnlyRound.myAnswer === null ? (
             <form onSubmit={handleAnswer} className="space-y-2">
               <label htmlFor="contrasta-answer" className="label">Your answer and why</label>
               <textarea
@@ -179,27 +191,27 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
           ) : (
             <div className="rounded-2xl bg-teach-soft p-3 text-sm space-y-1">
               <p className="font-bold">Your answer, hidden for now</p>
-              <p className="whitespace-pre-wrap break-words">{round.myAnswer}</p>
+              <p className="whitespace-pre-wrap break-words">{compareOnlyRound.myAnswer}</p>
             </div>
           )}
           <div className="text-sm text-muted space-y-1" aria-live="polite">
-            {round.answeredBy.map(person => (
+            {compareOnlyRound.answeredBy.map(person => (
               <p key={person.id} className="flex items-center gap-1.5 min-w-0">
                 <CheckCircle2 className="w-4 h-4 text-teach shrink-0" aria-hidden="true" />
                 <span className="truncate">{person.id === user?.id ? 'You have answered' : `${person.name} has answered`}</span>
               </p>
             ))}
             <p>
-              {round.waitingForCount === 1 ? 'Waiting for 1 person to answer.' : `Waiting for ${round.waitingForCount} people to answer.`}
+              {compareOnlyRound.waitingForCount === 1 ? 'Waiting for 1 person to answer.' : `Waiting for ${compareOnlyRound.waitingForCount} people to answer.`}
             </p>
           </div>
         </>
       )}
 
-      {round && isRevealed && (
+      {compareOnlyRound && isRevealed && (
         <>
           <ul className="space-y-2">
-            {round.answers.map(answer => (
+            {compareOnlyRound.answers.map(answer => (
               <li key={answer.userId} className="rounded-2xl bg-teach-soft p-3 text-sm space-y-1">
                 <p className="font-bold truncate">{answer.userId === user?.id ? 'You' : answer.name}</p>
                 <p className="whitespace-pre-wrap break-words">{answer.answer}</p>
@@ -218,6 +230,6 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
           )}
         </>
       )}
-    </section>
+    </CollapsiblePanel>
   );
 };

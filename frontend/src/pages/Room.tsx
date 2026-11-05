@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Check, Flag, Link2, LogOut, Paperclip, Send, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -14,12 +14,66 @@ import { ContrastaPanel } from '../components/ContrastaPanel';
 import { StudyMindPanel } from '../components/StudyMindPanel';
 import { TeachBackPanel } from '../components/TeachBackPanel';
 import { findYouTubeId, YouTubeEmbed } from '../components/YouTubeEmbed';
+import { ContrastaActionMenu } from '../components/ContrastaActionMenu';
+import { ActionForm, CheckCard, ConclusionCard, HelpResultCard, RevealCard, RoundCard, SessionCard, SuggestionCard } from '../components/ContrastaCards';
+import { TeachBackActivityCard } from '../components/TeachBackActivityCard';
+import { FlowContext, useContrastaFlow, type FlowContextValue, type FormKey } from '../components/contrastaFlowContext';
+import type { Activity, Flow } from '../services/contrastaFlow';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const ACCEPTED_FILES = 'image/png,image/jpeg,image/gif,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/mp4,audio/x-m4a,video/mp4,video/webm,application/pdf';
 
 const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+type TimelineItem =
+  | { key: string; at: string; type: 'message'; message: RoomMessage }
+  | { key: string; at: string; type: 'card'; render: () => React.ReactNode };
+
+/** Mezcla mensajes y tarjetas por orden cronológico, sin tocar los mensajes. */
+const buildTimeline = (messages: RoomMessage[], flow: Flow | null): TimelineItem[] => {
+  const items: TimelineItem[] = messages.map(message => ({ key: `message:${message.id}`, at: message.createdAt, type: 'message', message }));
+  const round = flow?.round;
+  if (flow && round) {
+    const card = (key: string, at: string, render: () => React.ReactNode) => items.push({ key, at, type: 'card', render });
+    card(`round:${round.id}`, round.createdAt, () => <RoundCard flow={flow} />);
+    if (round.revealedAt) card(`reveal:${round.id}`, round.revealedAt, () => <RevealCard flow={flow} />);
+    flow.cards.forEach(help => card(`help:${help.id}`, help.createdAt, () => <HelpResultCard card={help} />));
+    if (round.conclusion) card(`conclusion:${round.id}`, round.conclusion.at, () => <ConclusionCard flow={flow} />);
+    flow.activities.forEach(activity => card(`activity:${activity.id}`, activity.createdAt, () => <TeachBackActivityCard activity={activity} />));
+    if (flow.check) card(`check:${round.id}`, flow.check.createdAt, () => <CheckCard flow={flow} />);
+    if (flow.suggestion) card(`suggestion:${round.id}:${flow.suggestion.key}`, flow.suggestion.at, () => <SuggestionCard key={`${round.id}:${flow.suggestion?.key}`} flow={flow} />);
+  }
+  return items.sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.key.localeCompare(b.key));
+};
+
+const isEditing = (container: HTMLElement) => {
+  const active = document.activeElement;
+  return Boolean(active && container.contains(active) && ['TEXTAREA', 'INPUT', 'SELECT'].includes(active.tagName));
+};
+
+/** Lo que espera a esta persona: permite volver a una tarjeta que ha quedado arriba. */
+const pendingForMe = (flow: Flow | null, userId?: string): { text: string; target: string } | null => {
+  const round = flow?.round;
+  if (!flow || !round || round.finishedAt) return null;
+  const open = flow.activities.find(activity => activity.status === 'pending' || activity.status === 'active');
+  const step = flow.step ? `Step ${flow.step.number} of 6 · ` : '';
+  if (open) return { text: `${step}${activityStatusText(open, userId)}`, target: `activity:${open.id}` };
+  if (round.status === 'individual' && !round.iHaveAnswered) return { text: `${step}Your answer is pending`, target: `round:${round.id}` };
+  if (flow.check && !flow.check.iHaveAnswered) return { text: `${step}A new question is waiting`, target: `check:${round.id}` };
+  return null;
+};
+
+const activityStatusText = (activity: Activity, userId?: string) => {
+  if (activity.status === 'pending') {
+    return activity.partner.id === userId ? `${activity.proposer.name} proposed TeachBack` : 'TeachBack proposal pending';
+  }
+  const explainer = activity.turn === 1 ? activity.proposer : activity.partner;
+  const current = activity.turns.find(turn => turn.turn === activity.turn);
+  if (!current) return explainer.id === userId ? 'Your turn to explain' : `${explainer.name} is explaining`;
+  if (!current.review) return explainer.id === userId ? 'Waiting for a review' : 'Your turn to review';
+  return 'TeachBack turn reviewed';
+};
 
 export const Room: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -47,6 +101,10 @@ export const Room: React.FC = () => {
   const chatRef = useRef<HTMLDivElement>(null);
   const followChat = useRef(true);
   const fileInput = useRef<HTMLInputElement>(null);
+  const composerInput = useRef<HTMLInputElement>(null);
+  const [hasNew, setHasNew] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const [openForm, setOpenForm] = useState<FormKey | null>(null);
 
   // Al abrir la sala se entra en ella; después se consulta cada pocos segundos.
   useEffect(() => {
@@ -107,15 +165,80 @@ export const Room: React.FC = () => {
       .catch(() => undefined);
   }, [token, roomId, roomIsClosed]);
 
+  const { flow, apply: applyFlow, refresh: refreshFlow } = useContrastaFlow(token, roomId);
+  const timeline = useMemo(() => buildTimeline(messages, flow), [messages, flow]);
+
+  // Baja solo si hay algo nuevo, y nunca mientras se está escribiendo en una tarjeta.
+  const lastItem = timeline[timeline.length - 1];
+  const contentSignature = `${timeline.length}:${lastItem?.key}:${flow ? JSON.stringify(flow).length : 0}`;
+  const seenSignature = useRef('');
+  const seenLastKey = useRef<string | undefined>(undefined);
   useEffect(() => {
+    if (seenSignature.current === contentSignature) return;
+    seenSignature.current = contentSignature;
     const chat = chatRef.current;
-    if (chat && followChat.current) chat.scrollTop = chat.scrollHeight;
-  }, [messages]);
+    if (!chat) return;
+    if (followChat.current && !isEditing(chat)) {
+      chat.scrollTop = chat.scrollHeight;
+      setHasNew(false);
+    } else {
+      setHasNew(true);
+    }
+  }, [contentSignature]);
+
+  // Un aviso breve para lectores de pantalla: las tarjetas y sus formularios no se anuncian enteros.
+  useEffect(() => {
+    if (!lastItem || seenLastKey.current === lastItem.key) return;
+    const first = seenLastKey.current === undefined;
+    seenLastKey.current = lastItem.key;
+    if (first) return;
+    if (lastItem.type === 'message') {
+      if (lastItem.message.senderId !== user?.id) setAnnouncement(`${lastItem.message.senderName}: ${lastItem.message.content.slice(0, 200)}`);
+    } else {
+      setAnnouncement('Contrasta has a new update in the conversation.');
+    }
+  }, [lastItem, user?.id]);
 
   const handleScroll = () => {
     const chat = chatRef.current;
-    if (chat) followChat.current = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80;
+    if (!chat) return;
+    followChat.current = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80;
+    if (followChat.current) setHasNew(false);
   };
+
+  const scrollToEnd = useCallback(() => {
+    const chat = chatRef.current;
+    if (!chat) return;
+    followChat.current = true;
+    setHasNew(false);
+    chat.scrollTop = chat.scrollHeight;
+  }, []);
+
+  // El menú lo abre el estudiante: aquí sí se lleva la vista al formulario.
+  const openActionForm = useCallback((form: FormKey) => setOpenForm(form), []);
+  useEffect(() => {
+    if (openForm) scrollToEnd();
+  }, [openForm, scrollToEnd]);
+
+  const focusComposer = useCallback(() => composerInput.current?.focus(), []);
+
+  const flowContext = useMemo<FlowContextValue | null>(
+    () =>
+      flow && token && user && roomId
+        ? {
+            roomId,
+            token,
+            userId: user.id,
+            flow,
+            readOnly: Boolean(roomIsClosed),
+            apply: applyFlow,
+            refresh: refreshFlow,
+            openForm: openActionForm,
+            focusComposer,
+          }
+        : null,
+    [flow, token, user, roomId, roomIsClosed, applyFlow, refreshFlow, openActionForm, focusComposer],
+  );
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,7 +337,32 @@ export const Room: React.FC = () => {
 
   if (!room) return <LoadingState message="Entering the room..." />;
 
-  const othersInRoom = room.participants.filter(participant => participant.id !== user?.id).length;
+  const renderMessage = (message: RoomMessage) => {
+    const mine = message.senderId === user?.id;
+    const youTubeId = findYouTubeId(message.content);
+    return (
+      <div key={message.id} className={`flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
+        <Avatar name={message.senderName} photoUrl={message.senderPhotoUrl} tone={mine ? 'teach' : 'learn'} className="w-8 h-8 text-sm" />
+        <div className={`max-w-[80%] min-w-0 space-y-1 ${mine ? 'text-right' : ''}`}>
+          <p className="text-xs">
+            <span className="font-bold">{mine ? 'You' : message.senderName}</span>{' '}
+            <span className="text-muted">{formatTime(message.createdAt)}</span>
+          </p>
+          {message.content && (
+            <p className={`inline-block text-left whitespace-pre-wrap break-words px-3.5 py-2.5 rounded-2xl text-sm ${mine ? 'bg-teach-soft rounded-br-sm' : 'bg-learn-soft rounded-bl-sm'}`}>
+              {message.content}
+            </p>
+          )}
+          {message.attachment && <AttachmentView roomId={id} attachment={message.attachment} />}
+          {youTubeId && <YouTubeEmbed videoId={youTubeId} />}
+        </div>
+      </div>
+    );
+  };
+
+  const others = room.participants.filter(participant => participant.id !== user?.id);
+  const othersInRoom = others.length;
+  const pending = pendingForMe(flow, user?.id);
 
   return (
     <div className="page max-w-7xl space-y-4">
@@ -238,41 +386,50 @@ export const Room: React.FC = () => {
       {connectionLost && <ErrorState message="Connection lost. Retrying..." />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <section className="card lg:col-span-2 flex flex-col h-[60vh] min-h-96" aria-label="Conversation">
-          <div ref={chatRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4" aria-live="polite">
-            {messages.length === 0 && (
+        <section className="card lg:col-span-2 flex flex-col h-[60vh] lg:h-[65vh] min-h-96" aria-label="Conversation">
+          <p className="sr-only" aria-live="polite">{announcement}</p>
+          {pending && (
+            <div className="px-4 py-2 border-b border-line flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+              <span className="font-bold min-w-0 break-words">{pending.text}</span>
+              <button
+                type="button"
+                onClick={() => document.getElementById(`timeline-${pending.target}`)?.scrollIntoView({ block: 'start' })}
+                className="font-bold text-teach-strong cursor-pointer shrink-0"
+              >
+                Go to activity
+              </button>
+            </div>
+          )}
+          <div className="relative flex-1 min-h-0 flex flex-col">
+          <div ref={chatRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
+            {timeline.length === 0 && (
               <p className="text-center text-sm text-muted py-12">
                 Nobody has written yet. Start with a question or share a file: you don't need to know the answer.
               </p>
             )}
-            {messages.map(message => {
-              const mine = message.senderId === user?.id;
-              const youTubeId = findYouTubeId(message.content);
-              return (
-                <div key={message.id} className={`flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
-                  <Avatar name={message.senderName} photoUrl={message.senderPhotoUrl} tone={mine ? 'teach' : 'learn'} className="w-8 h-8 text-sm" />
-                  <div className={`max-w-[80%] min-w-0 space-y-1 ${mine ? 'text-right' : ''}`}>
-                    <p className="text-xs">
-                      <span className="font-bold">{mine ? 'You' : message.senderName}</span>{' '}
-                      <span className="text-muted">{formatTime(message.createdAt)}</span>
-                    </p>
-                    {message.content && (
-                      <p className={`inline-block text-left whitespace-pre-wrap break-words px-3.5 py-2.5 rounded-2xl text-sm ${mine ? 'bg-teach-soft rounded-br-sm' : 'bg-learn-soft rounded-bl-sm'}`}>
-                        {message.content}
-                      </p>
-                    )}
-                    {message.attachment && <AttachmentView roomId={id} attachment={message.attachment} />}
-                    {youTubeId && <YouTubeEmbed videoId={youTubeId} />}
-                  </div>
-                </div>
-              );
-            })}
+            {flowContext ? (
+              <FlowContext.Provider value={flowContext}>
+                {timeline.map(item => {
+                  if (item.type === 'card') return <div key={item.key} id={`timeline-${item.key}`}>{item.render()}</div>;
+                  return renderMessage(item.message);
+                })}
+                {openForm && <ActionForm key={openForm} form={openForm} flow={flowContext.flow} others={others} onClose={() => setOpenForm(null)} />}
+              </FlowContext.Provider>
+            ) : (
+              messages.map(renderMessage)
+            )}
+          </div>
+          {hasNew && (
+            <button type="button" onClick={scrollToEnd} className="chip chip-teach absolute bottom-2 left-1/2 -translate-x-1/2 cursor-pointer shadow">
+              New updates below
+            </button>
+          )}
           </div>
 
           {sendError && <div className="px-4 pb-2"><ErrorState message={sendError} /></div>}
 
           {!room.isClosed && (
-          <form onSubmit={handleSend} className="p-4 border-t border-line flex items-center gap-2">
+          <form onSubmit={handleSend} className="relative p-4 border-t border-line flex items-center gap-2 max-[359px]:flex-wrap">
             <input ref={fileInput} type="file" accept={ACCEPTED_FILES} onChange={handleFile} className="hidden" aria-label="File to share" />
             <button
               type="button"
@@ -284,15 +441,17 @@ export const Room: React.FC = () => {
             >
               <Paperclip className="w-4 h-4" />
             </button>
+            <ContrastaActionMenu actions={flow?.actions ?? []} onSelect={openActionForm} />
             <input
+              ref={composerInput}
               value={draft}
               onChange={e => setDraft(e.target.value)}
               maxLength={2000}
               placeholder={uploading ? 'Uploading file...' : 'Type a message or paste a YouTube link...'}
               aria-label="Message"
-              className="field flex-1 min-w-0"
+              className="field flex-1 min-w-0 max-[359px]:order-first max-[359px]:basis-full"
             />
-            <button type="submit" disabled={sending || !draft.trim()} aria-label="Send message" className="btn btn-primary px-4!">
+            <button type="submit" disabled={sending || !draft.trim()} aria-label="Send message" className="btn btn-primary px-4! max-[359px]:ml-auto">
               <Send className="w-4 h-4" />
             </button>
           </form>
@@ -300,7 +459,7 @@ export const Room: React.FC = () => {
         </section>
 
         <aside className="space-y-6" aria-label="Room information">
-          {!room.isClosed && <ContrastaPanel roomId={id} />}
+          {flowContext && <FlowContext.Provider value={flowContext}><SessionCard flow={flowContext.flow} /></FlowContext.Provider>}
 
           <section className="card p-5 space-y-4">
             <h2 className="text-lg text-ink flex items-center gap-2">
@@ -362,6 +521,7 @@ export const Room: React.FC = () => {
 
           {!room.isClosed && (
             <>
+              <ContrastaPanel roomId={id} />
               <StudyMindPanel roomId={id} />
               <TeachBackPanel roomId={id} />
             </>

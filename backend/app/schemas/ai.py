@@ -74,3 +74,19 @@ class TeachBackFeedbackRead(_Camel):
     evidence_to_check: list[str]
     suggested_peer_activity: str
     uncertainty_note: str
+
+
+class ComparisonOutput(BaseModel):
+    """Sin nota, clasificación ni ganador: la comparación ayuda a debatir, no dictamina."""
+
+    agreements: ModelList
+    differences: ModelList
+    questions: ModelList
+    claims_to_verify: ModelList
+    uncertainty_note: ModelText
+
+
+class CheckQuestionOutput(BaseModel):
+    """Solo la pregunta: sin solución, para que la IA no pase por una corrección objetiva."""
+
+    question: ModelText

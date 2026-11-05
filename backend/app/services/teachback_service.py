@@ -39,7 +39,8 @@ def _rows_query(room_id: UUID):
         .join(explainer, explainer.id == TeachBackSubmission.explainer_id)
         .outerjoin(TeachBackPeerReview, TeachBackPeerReview.submission_id == TeachBackSubmission.id)
         .outerjoin(reviewer, reviewer.id == TeachBackPeerReview.reviewer_id)
-        .where(TeachBackSubmission.session_id == room_id)
+        # Los turnos de una actividad de Contrasta son de su pareja: no entran en el panel.
+        .where(TeachBackSubmission.session_id == room_id, TeachBackSubmission.activity_id.is_(None))
     )
 
 

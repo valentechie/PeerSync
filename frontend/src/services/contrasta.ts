@@ -16,6 +16,8 @@ export interface ContrastaRound {
   waitingForCount: number;
   myAnswer: string | null;
   answers: RevealedAnswer[];
+  pairRound: boolean;
+  finishedAt: string | null;
 }
 
 export interface ContrastaState {

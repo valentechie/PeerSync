@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.endpoints import ai, auth, contrasta, friends, invitations, matching, people, practice, profiles, reviews, rooms, studies, teachback
+from app.api.endpoints import ai, auth, contrasta, contrasta_flow, friends, invitations, matching, people, practice, profiles, reviews, rooms, studies, teachback
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(auth.router)
@@ -10,6 +10,7 @@ api_router.include_router(profiles.photos_router)
 api_router.include_router(matching.router)
 api_router.include_router(rooms.router)
 api_router.include_router(contrasta.router)
+api_router.include_router(contrasta_flow.router)
 api_router.include_router(teachback.router)
 api_router.include_router(ai.router)
 api_router.include_router(invitations.router)

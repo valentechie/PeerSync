@@ -10,12 +10,13 @@ import {
   type TeachBackFeedback,
   type TeachBackSubmission,
 } from '../services/teachback';
+import { CollapsiblePanel } from './CollapsiblePanel';
 import { ErrorState } from './UIStates';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_TEXT_LENGTH = 4000;
 
-const FeedbackList: React.FC<{ title: string; items: string[] }> = ({ title, items }) =>
+export const FeedbackList: React.FC<{ title: string; items: string[] }> = ({ title, items }) =>
   items.length === 0 ? null : (
     <div>
       <p className="font-bold">{title}</p>
@@ -123,7 +124,7 @@ const SubmissionCard: React.FC<{
 };
 
 export const TeachBackPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [submissions, setSubmissions] = useState<TeachBackSubmission[]>([]);
   const [concept, setConcept] = useState('');
   const [explanation, setExplanation] = useState('');
@@ -169,13 +170,21 @@ export const TeachBackPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
   const replace = (updated: TeachBackSubmission) =>
     setSubmissions(current => current.map(item => (item.id === updated.id ? updated : item)));
 
+  // Con el panel plegado, las explicaciones pendientes de revisar no deben quedar ocultas.
+  const awaitingReview = submissions.filter(item => !item.review && item.explainerId !== user?.id).length;
+
   return (
-    <section className="card p-5 space-y-4" aria-label="TeachBack">
-      <div className="space-y-1">
-        <h2 className="text-lg text-ink flex items-center gap-2">
+    <CollapsiblePanel
+      label="TeachBack"
+      title={
+        <>
           <MessageSquareQuote className="w-5 h-5 text-guide" aria-hidden="true" />
           <span>TeachBack</span>
-        </h2>
+        </>
+      }
+      badge={awaitingReview > 0 ? <span className="chip chip-teach">{awaitingReview} to review</span> : undefined}
+    >
+      <div className="space-y-1">
         <p className="text-sm text-muted">Explain a concept. A peer reviews it first; then you can ask the AI for suggestions.</p>
       </div>
 
@@ -205,6 +214,6 @@ export const TeachBackPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
           ))}
         </ul>
       )}
-    </section>
+    </CollapsiblePanel>
   );
 };

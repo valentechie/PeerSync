@@ -13,6 +13,8 @@ class RoundCreate(_Camel):
     model_config = _Camel.model_config | {"extra": "forbid"}
 
     prompt: LongText
+    # Con pareja, la ronda es solo de esas dos personas. Sin ella, sigue las reglas de siempre.
+    partner_id: UUID | None = None
 
 
 class AnswerCreate(_Camel):
@@ -43,6 +45,8 @@ class RoundRead(_Camel):
     waiting_for_count: int
     my_answer: str | None
     answers: list[RevealedAnswer]
+    pair_round: bool = False
+    finished_at: datetime | None = None
 
 
 class ContrastaState(_Camel):

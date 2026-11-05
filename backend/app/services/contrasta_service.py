@@ -40,6 +40,14 @@ class NoRevealedRoundError(Exception):
     pass
 
 
+class NotInRoundPairError(Exception):
+    pass
+
+
+class InvalidPartnerError(Exception):
+    pass
+
+
 def _lock_room(db: Session, room_id: UUID) -> None:
     """Serializa los cambios de la sala: dos envíos simultáneos no pueden saltarse la revelación."""
     db.execute(select(StudySession.id).where(StudySession.id == room_id).with_for_update())
@@ -50,7 +58,10 @@ def _latest_round(db: Session, room_id: UUID) -> ContrastaRound | None:
     return db.scalar(
         select(ContrastaRound)
         .where(ContrastaRound.session_id == room_id)
-        .order_by((ContrastaRound.status == ContrastaStatus.INDIVIDUAL).desc(), ContrastaRound.created_at.desc())
+        .order_by(
+            ((ContrastaRound.status == ContrastaStatus.INDIVIDUAL) & ContrastaRound.finished_at.is_(None)).desc(),
+            ContrastaRound.created_at.desc(),
+        )
         .limit(1)
         .execution_options(populate_existing=True)
     )
@@ -69,9 +80,27 @@ def _answered_ids(db: Session, round_id: UUID) -> set[UUID]:
     return set(db.scalars(select(ContrastaAnswer.user_id).where(ContrastaAnswer.round_id == round_id)))
 
 
+def is_pair_round(round_: ContrastaRound) -> bool:
+    return round_.pair_a_id is not None and round_.pair_b_id is not None
+
+
+def in_pair(round_: ContrastaRound, user_id: UUID) -> bool:
+    return user_id in (round_.pair_a_id, round_.pair_b_id)
+
+
+def _is_open_individual(round_: ContrastaRound) -> bool:
+    return round_.status == ContrastaStatus.INDIVIDUAL and round_.finished_at is None
+
+
 def _reveal_if_ready(db: Session, room_id: UUID, round_: ContrastaRound) -> None:
     active = {id_ for id_, _ in _active_participants(db, room_id)}
-    if len(active) >= MIN_PEOPLE_TO_REVEAL and active <= _answered_ids(db, round_.id):
+    if is_pair_round(round_):
+        # Solo cuenta la pareja, así que entrar o salir de la sala nunca revela nada por accidente.
+        pair = {round_.pair_a_id, round_.pair_b_id}
+        ready = pair <= active and pair <= _answered_ids(db, round_.id)
+    else:
+        ready = len(active) >= MIN_PEOPLE_TO_REVEAL and active <= _answered_ids(db, round_.id)
+    if ready:
         round_.status = ContrastaStatus.REVEALED
         round_.revealed_at = db.scalar(select(func.now()))
 
@@ -79,11 +108,11 @@ def _reveal_if_ready(db: Session, room_id: UUID, round_: ContrastaRound) -> None
 def _current_round(db: Session, room_id: UUID) -> ContrastaRound | None:
     """Devuelve la última ronda. También revela si quien faltaba por responder ha salido de la sala."""
     round_ = _latest_round(db, room_id)
-    if round_ is None or round_.status != ContrastaStatus.INDIVIDUAL:
+    if round_ is None or not _is_open_individual(round_):
         return round_
     _lock_room(db, room_id)
     round_ = _latest_round(db, room_id)
-    if round_ is not None and round_.status == ContrastaStatus.INDIVIDUAL:
+    if round_ is not None and _is_open_individual(round_):
         _reveal_if_ready(db, room_id, round_)
         db.commit()
     return round_
@@ -111,8 +140,12 @@ def _state(db: Session, user: User, room_id: UUID, round_: ContrastaRound | None
     if round_ is None:
         return ContrastaState(round=None)
     revealed = round_.status == ContrastaStatus.REVEALED
-    answers = _revealed_answers(db, room_id, round_) if revealed else []
+    # Fuera de la pareja se sabe que hay una ronda, pero nunca se ven sus respuestas.
+    outsider = is_pair_round(round_) and not in_pair(round_, user.id)
+    answers = _revealed_answers(db, room_id, round_) if revealed and not outsider else []
     active = _active_participants(db, room_id)
+    if is_pair_round(round_):
+        active = [person for person in active if in_pair(round_, person[0])]
     answered = _answered_ids(db, round_.id)
     # Mientras la ronda es individual solo se lee el texto de la respuesta propia.
     my_answer = db.scalar(
@@ -129,6 +162,8 @@ def _state(db: Session, user: User, room_id: UUID, round_: ContrastaRound | None
             waiting_for_count=0 if revealed else sum(id_ not in answered for id_, _ in active),
             my_answer=my_answer,
             answers=answers,
+            pair_round=is_pair_round(round_),
+            finished_at=round_.finished_at,
         )
     )
 
@@ -138,13 +173,29 @@ def get_state(db: Session, user: User, room_id: UUID) -> ContrastaState:
     return _state(db, user, room.id, _current_round(db, room.id))
 
 
-def create_round(db: Session, user: User, room_id: UUID, prompt: str) -> ContrastaState:
+def is_active_round(round_: ContrastaRound) -> bool:
+    """Una ronda de pareja sigue activa tras revelar; las demás terminan al revelar, como siempre."""
+    if round_.finished_at is not None:
+        return False
+    return is_pair_round(round_) or round_.status == ContrastaStatus.INDIVIDUAL
+
+
+def create_round(db: Session, user: User, room_id: UUID, prompt: str, partner_id: UUID | None = None) -> ContrastaState:
     room = room_service.get_open_member_room(db, user, room_id)
     _lock_room(db, room.id)
     latest = _latest_round(db, room.id)
-    if latest is not None and latest.status == ContrastaStatus.INDIVIDUAL:
+    if latest is not None and is_active_round(latest):
         raise RoundAlreadyOpenError
-    round_ = ContrastaRound(session_id=room.id, prompt=prompt)
+    if partner_id is not None:
+        active = {id_ for id_, _ in _active_participants(db, room.id)}
+        if partner_id == user.id or partner_id not in active:
+            raise InvalidPartnerError
+    round_ = ContrastaRound(
+        session_id=room.id,
+        prompt=prompt,
+        pair_a_id=user.id if partner_id is not None else None,
+        pair_b_id=partner_id,
+    )
     db.add(round_)
     db.commit()
     return _state(db, user, room.id, round_)
@@ -154,8 +205,10 @@ def submit_answer(db: Session, user: User, room_id: UUID, answer: str) -> Contra
     room = room_service.get_open_member_room(db, user, room_id)
     _lock_room(db, room.id)
     round_ = _latest_round(db, room.id)
-    if round_ is None or round_.status != ContrastaStatus.INDIVIDUAL:
+    if round_ is None or not _is_open_individual(round_):
         raise NoOpenRoundError
+    if is_pair_round(round_) and not in_pair(round_, user.id):
+        raise NotInRoundPairError
     if user.id in _answered_ids(db, round_.id):
         raise AlreadyAnsweredError
     db.add(ContrastaAnswer(round_id=round_.id, user_id=user.id, answer=answer))
@@ -198,6 +251,8 @@ def facilitate(db: Session, user: User, room_id: UUID) -> FacilitationRead:
     round_ = _current_round(db, room.id)
     if round_ is None or round_.status != ContrastaStatus.REVEALED:
         raise NoRevealedRoundError
+    if is_pair_round(round_) and not in_pair(round_, user.id):
+        raise NoRevealedRoundError
     context = _context_for_ai(db, room, round_)
     # Libera la conexión: la llamada a la IA puede tardar y no necesita la base de datos.
     db.rollback()
@@ -211,3 +266,12 @@ def facilitate(db: Session, user: User, room_id: UUID) -> FacilitationRead:
         source = "fallback"
         output = facilitator.prepared_question(context["answers_identical"])
     return FacilitationRead(source=source, **output.model_dump())
+
+
+# Para el recorrido por parejas, que comparte estas reglas.
+lock_room = _lock_room
+latest_round = _latest_round
+current_round = _current_round
+active_participants = _active_participants
+answered_ids = _answered_ids
+revealed_answers = _revealed_answers

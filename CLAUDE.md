@@ -2,13 +2,13 @@
 
 Eres el asistente de desarrollo de IA colaborando en el repositorio **PeerSync**. Tu objetivo principal es desarrollar, ampliar y mantener el **backend** del proyecto.
 
-**Foco del producto**: salas de estudio privadas, solo por invitación, entre pares que no tienen por qué ser expertos. La sala es lo más importante. La web tiene también amigos, gente que quiere aprender lo mismo y compañeros relacionados por estudios; no muestra lo que cada uno ofrece ni el matching por habilidades.
+**Foco del producto**: salas de estudio privadas, solo por invitación, entre pares que no tienen por qué ser expertos. La sala es lo más importante, y Contrasta por parejas es su recorrido principal: StudyMind y TeachBack se integran en la conversación y sus paneles quedan como herramientas complementarias. La web tiene también amigos, gente que quiere aprender lo mismo y compañeros relacionados por estudios; no muestra lo que cada uno ofrece ni el matching por habilidades.
 
 ## Stack Tecnológico Fijo (No modificar sin aprobación)
 - **Backend**: Python + FastAPI
 - **Base de datos**: PostgreSQL con SQLAlchemy y Alembic (migraciones)[cite: 1]
 - **Auth**: modo demo para el hackathon, sin comprobar credenciales: entra cualquier usuario y el backend emite un JWT propio[cite: 1]
-- **IA**: Gemini API — **estrictamente invocada desde el backend (`backend/app/ai/`)**, nunca desde el frontend[cite: 1].
+- **IA**: DeepSeek API (`backend/app/ai/deepseek_client.py`) — **estrictamente invocada desde el backend (`backend/app/ai/`)**, nunca desde el frontend. Gemini se mantiene únicamente en Practicar[cite: 1].
 - **Frontend** (existente, no tocar su stack): React + TypeScript + Vite + Tailwind[cite: 1].
 
 ## Reglas de Arquitectura y Negocio (No negociables)
@@ -20,5 +20,5 @@ Eres el asistente de desarrollo de IA colaborando en el repositorio **PeerSync**
 ## Normas de Trabajo
 - Trabaja de forma modular respetando la estructura de carpetas en `backend/app/` (`core/`, `models/`, `schemas/`, `api/`, `services/`, `ai/`)[cite: 1].
 - No inventes archivos ni elimines código funcional existente[cite: 4].
-- Valida siempre la seguridad en cada endpoint (autorización por sesión, minimización de datos hacia Gemini, validación con Pydantic)[cite: 1, 4].
+- Valida siempre la seguridad en cada endpoint (autorización por sesión, minimización de datos hacia los modelos de IA, validación con Pydantic)[cite: 1, 4].
 - Ejecuta y comprueba los cambios antes de dar por terminada una tarea[cite: 1, 4].

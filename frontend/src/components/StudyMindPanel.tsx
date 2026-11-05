@@ -3,6 +3,7 @@ import { Lightbulb, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../services/api';
 import { MAX_HELP_STEP, requestHelp, type StudyMindHelp } from '../services/studymind';
+import { CollapsiblePanel } from './CollapsiblePanel';
 import { ErrorState } from './UIStates';
 
 export const StudyMindPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
@@ -27,11 +28,16 @@ export const StudyMindPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
   };
 
   return (
-    <section className="card p-5 space-y-3" aria-label="StudyMind">
-      <h2 className="text-lg text-ink flex items-center gap-2">
-        <Lightbulb className="w-5 h-5 text-guide" aria-hidden="true" />
-        <span>StudyMind</span>
-      </h2>
+    <CollapsiblePanel
+      label="StudyMind"
+      bodyClassName="space-y-3"
+      title={
+        <>
+          <Lightbulb className="w-5 h-5 text-guide" aria-hidden="true" />
+          <span>StudyMind</span>
+        </>
+      }
+    >
       <p className="text-sm text-muted">Your peers come first. It only steps in if you ask, with gradual help and without giving the solution.</p>
 
       <div className="space-y-2">
@@ -71,6 +77,6 @@ export const StudyMindPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
       ) : (
         <button onClick={() => setHelp(null)} className="btn btn-secondary w-full">Start over</button>
       )}
-    </section>
+    </CollapsiblePanel>
   );
 };
