@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import logoMark from '../assets/logo-mark.png';
 import { apiAssetUrl } from '../services/api';
 
 export const SwapMark: React.FC<{ className?: string }> = ({ className = 'w-11 h-11' }) => (
-  <span className={`brand-tile ${className}`} aria-hidden="true">
-    <Sparkles className="w-3/5 h-3/5" />
-  </span>
+  <img src={logoMark} alt="" className={`inline-block shrink-0 ${className}`} />
 );
 
 export const Avatar: React.FC<{ name: string; photoUrl?: string | null; tone?: 'teach' | 'learn'; className?: string }> = ({

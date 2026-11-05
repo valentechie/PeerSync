@@ -135,10 +135,16 @@ Persona: `{"id", "name", "bio", "sharedInterests", "friendStatus"}`, con `friend
 | GET | `/people?search=` (2 a 100 caracteres) | `200` hasta 20 personas por nombre · `422` | 60/min por IP |
 | GET | `/people/study-matches` | `200` hasta 50 personas con tu mismo estudio o uno parecido, con `study`, `matchType` y `matchReason` | 60/min por IP |
 | GET | `/people/same-interests` | `200` hasta 50 personas que quieren aprender algo que tú quieres aprender | 60/min por IP |
+| GET | `/connections/friends` | `200` `{"me", "nodes", "links"}`: grafo con tus amigos aceptados | 60/min por IP |
+| GET | `/connections/suggestions` | `200` `{"me", "nodes", "links"}`: hasta 30 personas que aún no son tus amigas, ordenadas por `score` | 60/min por IP |
 
 Los estudios se relacionan por reglas, sin LLM (`backend/app/ai/skillswap/studies.py`): `direct` si es el mismo título y `similar` si es de la misma familia, aunque sea de otro nivel, como SMR e Ingeniería Informática. "Otros estudios de..." solo cuenta como parecido, y "Otros estudios" no se relaciona. Orden: `direct` primero, luego temas en común, nombre e id.
 
 La coincidencia es determinista y sin LLM: compara `skillsSeeking` sin distinguir mayúsculas. Orden: temas en común, nombre e id.
+
+Grafos: cada nodo trae `{"id", "name", "study", "photoUrl", "friendStatus", "score", "strength", "reasons", "rooms"}` y cada línea `{"source", "target", "weight", "reasons"}`. La puntuación es determinista y sin LLM (`backend/app/ai/skillswap/connections.py`): mismo estudio 35, estudio parecido 20, 15 por tema en común (máximo 3) y 10 por sala abierta en común (máximo 2). `strength` es `strong` desde 60, `good` desde 35 y `possible` por debajo.
+
+Las líneas entre dos personas solo usan lo que quien mira ya puede ver: sus estudios, los temas que comparten también con quien mira y las salas donde quien mira está dentro. Nunca revelan amistades entre otras personas, y se dibujan hasta 3 por persona.
 
 ## Estudios
 

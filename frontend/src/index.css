@@ -110,12 +110,6 @@
     box-shadow: 0 24px 60px rgb(2 6 23 / 0.5);
   }
 
-  .brand-tile {
-    @apply inline-flex shrink-0 items-center justify-center rounded-2xl text-white;
-    background: linear-gradient(45deg, #4f46e5, #7c3aed, #c026d3);
-    box-shadow: 0 8px 20px rgb(124 58 237 / 0.4);
-  }
-
   .brand-text {
     @apply bg-clip-text font-extrabold text-transparent;
     background-image: linear-gradient(90deg, #818cf8, #a78bfa, #e879f9);

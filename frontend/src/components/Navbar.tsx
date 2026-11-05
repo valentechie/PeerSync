@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, GraduationCap, MessagesSquare, Mic, Users, User, LogOut } from 'lucide-react';
+import { BookOpen, Compass, GraduationCap, MessagesSquare, Mic, Share2, Users, User, LogOut } from 'lucide-react';
 import { fetchInvitations } from '../services/invitations';
 import { Avatar, SwapMark } from './Swap';
 
@@ -12,6 +12,12 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [invitationCount, setInvitationCount] = useState(0);
+  const mobileNavRef = useRef<HTMLElement>(null);
+
+  // En móvil la barra se desplaza de lado: la pestaña activa debe quedar a la vista.
+  useEffect(() => {
+    mobileNavRef.current?.querySelector('.nav-active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [pathname]);
 
   useEffect(() => {
     if (!token) return;
@@ -36,6 +42,8 @@ export const Navbar: React.FC = () => {
     { name: 'Rooms', short: 'Rooms', path: '/rooms', icon: MessagesSquare },
     { name: 'Classmates', short: 'Peers', path: '/classmates', icon: GraduationCap },
     { name: 'Friends', short: 'Friends', path: '/friends', icon: Users },
+    { name: 'My network', short: 'Network', path: '/network', icon: Share2 },
+    { name: 'Discover', short: 'Discover', path: '/discover', icon: Compass },
     { name: 'Learn', short: 'Learn', path: '/learn', icon: BookOpen },
     { name: 'Practice', short: 'Practice', path: '/practice', icon: Mic },
     { name: 'My profile', short: 'Profile', path: '/my-profile', icon: User },
@@ -55,7 +63,7 @@ export const Navbar: React.FC = () => {
           </button>
 
           {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 bg-paper/70 p-1.5 rounded-2xl border border-line" aria-label="Main">
+          <nav className="hidden xl:flex items-center gap-1 bg-paper/70 p-1.5 rounded-2xl border border-line" aria-label="Main">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -97,7 +105,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Navigation bar */}
-      <nav className="lg:hidden grid grid-cols-6 border-t border-line px-0.5 py-1" aria-label="Main mobile">
+      <nav ref={mobileNavRef} className="xl:hidden flex overflow-x-auto border-t border-line px-0.5 py-1" aria-label="Main mobile">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -105,7 +113,7 @@ export const Navbar: React.FC = () => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[11px] tracking-tight font-bold transition-colors ${
+                `flex-1 shrink-0 min-w-16 flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[11px] tracking-tight font-bold transition-colors ${
                   isActive ? 'nav-active' : 'text-muted'
                 }`
               }
