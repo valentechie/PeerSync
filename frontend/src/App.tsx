@@ -10,6 +10,8 @@ import { Rooms } from './pages/Rooms';
 import { Room } from './pages/Room';
 import { Classmates } from './pages/Classmates';
 import { Friends } from './pages/Friends';
+import { FriendGraph } from './pages/FriendGraph';
+import { DiscoverGraph } from './pages/DiscoverGraph';
 import { Learn } from './pages/Learn';
 import { Practice } from './pages/Practice';
 import { MyProfile } from './pages/MyProfile';
@@ -45,6 +47,8 @@ export function App() {
           <Route path="/rooms/:id" element={<ProtectedLayout><Room /></ProtectedLayout>} />
           <Route path="/classmates" element={<ProtectedLayout><Classmates /></ProtectedLayout>} />
           <Route path="/friends" element={<ProtectedLayout><Friends /></ProtectedLayout>} />
+          <Route path="/network" element={<ProtectedLayout><FriendGraph /></ProtectedLayout>} />
+          <Route path="/discover" element={<ProtectedLayout><DiscoverGraph /></ProtectedLayout>} />
           <Route path="/learn" element={<ProtectedLayout><Learn /></ProtectedLayout>} />
           <Route path="/practice" element={<ProtectedLayout><Practice /></ProtectedLayout>} />
           <Route path="/my-profile" element={<ProtectedLayout><MyProfile /></ProtectedLayout>} />
