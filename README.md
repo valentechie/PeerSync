@@ -2,8 +2,6 @@
 
 ![A PeerSync study room during a Contrasta round](docs/screenshots/contrasta-room.png)
 
-Invitation-only study rooms where students learn from each other, without needing an expert.
-
 **Live demo:** https://peer-sync-ashy.vercel.app
 
 Built for Hack4Edu 2026, for the challenge on AI applied to peer learning.
