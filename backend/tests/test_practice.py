@@ -68,8 +68,8 @@ def test_no_personal_data_reaches_gemini(client, auth_headers, gemini):
 
 
 def test_prompt_forbids_answers_and_grades():
-    assert "No des nunca la respuesta" in SYSTEM_PROMPT
-    assert "No pongas notas" in SYSTEM_PROMPT
+    assert "Never give the answer" in SYSTEM_PROMPT
+    assert "Do not give grades" in SYSTEM_PROMPT
 
 
 @pytest.mark.parametrize(
@@ -101,7 +101,7 @@ def test_without_api_key_it_says_so_and_invents_nothing(client, auth_headers, mo
     response = client.post(NEXT, json={"topic": "x"}, headers=auth_headers())
 
     assert response.status_code == 503
-    assert response.json() == {"detail": "El entrenamiento con IA aún no está configurado"}
+    assert response.json() == {"detail": "AI practice isn't configured yet"}
 
 
 def test_gemini_error_returns_503_without_details(client, auth_headers, gemini):

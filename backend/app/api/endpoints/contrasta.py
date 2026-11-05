@@ -30,7 +30,7 @@ def create_round(request: Request, room_id: UUID, data: RoundCreate, user: Curre
         try:
             return contrasta_service.create_round(db, user, room_id, data.prompt)
         except contrasta_service.RoundAlreadyOpenError as exc:
-            raise HTTPException(status.HTTP_409_CONFLICT, "Ya hay una ronda en marcha en esta sala") from exc
+            raise HTTPException(status.HTTP_409_CONFLICT, "There is already a round in progress in this room") from exc
 
 
 @router.post("/answers", response_model=ContrastaState, status_code=status.HTTP_201_CREATED)
@@ -40,6 +40,6 @@ def submit_answer(request: Request, room_id: UUID, data: AnswerCreate, user: Cur
         try:
             return contrasta_service.submit_answer(db, user, room_id, data.answer)
         except contrasta_service.NoOpenRoundError as exc:
-            raise HTTPException(status.HTTP_409_CONFLICT, "No hay ninguna ronda esperando respuestas") from exc
+            raise HTTPException(status.HTTP_409_CONFLICT, "No round is waiting for answers") from exc
         except contrasta_service.AlreadyAnsweredError as exc:
-            raise HTTPException(status.HTTP_409_CONFLICT, "Ya has enviado tu respuesta en esta ronda") from exc
+            raise HTTPException(status.HTTP_409_CONFLICT, "You have already sent your answer in this round") from exc

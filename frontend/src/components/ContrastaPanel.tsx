@@ -16,21 +16,21 @@ const POLL_INTERVAL_MS = 3000;
 const MAX_TEXT_LENGTH = 2000;
 
 const INTERVENTION_LABELS: Record<Facilitation['kind'], string> = {
-  evidence_check: 'Buscad evidencias',
-  edge_case: 'Probad un caso límite',
-  missing_information: 'Falta información',
-  open_question: 'Cuestión abierta',
+  evidence_check: 'Look for evidence',
+  edge_case: 'Try an edge case',
+  missing_information: 'Information missing',
+  open_question: 'Open question',
 };
 
 const Intervention: React.FC<{ intervention: Facilitation }> = ({ intervention }) => (
   <div className="rounded-2xl bg-guide-soft p-4 space-y-2 text-sm" aria-live="polite">
     <div className="flex flex-wrap items-center gap-2">
-      <span className="chip chip-guide">{intervention.source === 'ai' ? 'Sugerencia de IA' : 'Pregunta preparada, sin IA'}</span>
+      <span className="chip chip-guide">{intervention.source === 'ai' ? 'AI suggestion' : 'Prepared question, no AI'}</span>
       <span className="text-xs font-bold">{INTERVENTION_LABELS[intervention.kind]}</span>
     </div>
     <p className="font-bold break-words">{intervention.messageToPeers}</p>
-    <p className="break-words"><strong>Qué podéis hacer:</strong> {intervention.suggestedAction}</p>
-    <p className="break-words"><strong>Qué comprobar:</strong> {intervention.evidenceNeeded}</p>
+    <p className="break-words"><strong>What you can do:</strong> {intervention.suggestedAction}</p>
+    <p className="break-words"><strong>What to check:</strong> {intervention.evidenceNeeded}</p>
     <p className="text-xs text-muted break-words">{intervention.uncertaintyNote}</p>
   </div>
 );
@@ -119,18 +119,18 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
 
   const startForm = (
     <form onSubmit={handleStart} className="space-y-2">
-      <label htmlFor="contrasta-prompt" className="label">Pregunta o enunciado</label>
+      <label htmlFor="contrasta-prompt" className="label">Question or problem</label>
       <textarea
         id="contrasta-prompt"
         value={promptDraft}
         onChange={e => setPromptDraft(e.target.value)}
         maxLength={MAX_TEXT_LENGTH}
         rows={3}
-        placeholder="¿Qué queréis contrastar?"
+        placeholder="What do you want to compare?"
         className="field"
       />
       <button type="submit" disabled={saving || !promptDraft.trim()} className="btn btn-primary w-full">
-        {saving ? 'Empezando...' : 'Empezar ronda'}
+        {saving ? 'Starting...' : 'Start round'}
       </button>
     </form>
   );
@@ -145,12 +145,12 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
           <Scale className="w-5 h-5 text-teach" aria-hidden="true" />
           <span>Contrasta</span>
         </h2>
-        <p className="text-sm text-muted">Respondéis por separado y comparáis cuando todos hayan enviado.</p>
+        <p className="text-sm text-muted">Answer separately and compare once everyone has submitted.</p>
       </div>
 
       {error && <ErrorState message={error} />}
 
-      {!loaded && <p className="text-sm text-muted" role="status">Cargando la ronda...</p>}
+      {!loaded && <p className="text-sm text-muted" role="status">Loading the round...</p>}
 
       {loaded && !round && startForm}
 
@@ -162,23 +162,23 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
         <>
           {round.myAnswer === null ? (
             <form onSubmit={handleAnswer} className="space-y-2">
-              <label htmlFor="contrasta-answer" className="label">Tu respuesta y por qué</label>
+              <label htmlFor="contrasta-answer" className="label">Your answer and why</label>
               <textarea
                 id="contrasta-answer"
                 value={answerDraft}
                 onChange={e => setAnswerDraft(e.target.value)}
                 maxLength={MAX_TEXT_LENGTH}
                 rows={4}
-                placeholder="Nadie la verá hasta que todos hayan respondido."
+                placeholder="Nobody will see it until everyone has answered."
                 className="field"
               />
               <button type="submit" disabled={saving || !answerDraft.trim()} className="btn btn-primary w-full">
-                {saving ? 'Enviando...' : 'Enviar respuesta'}
+                {saving ? 'Sending...' : 'Send answer'}
               </button>
             </form>
           ) : (
             <div className="rounded-2xl bg-teach-soft p-3 text-sm space-y-1">
-              <p className="font-bold">Tu respuesta, oculta por ahora</p>
+              <p className="font-bold">Your answer, hidden for now</p>
               <p className="whitespace-pre-wrap break-words">{round.myAnswer}</p>
             </div>
           )}
@@ -186,11 +186,11 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
             {round.answeredBy.map(person => (
               <p key={person.id} className="flex items-center gap-1.5 min-w-0">
                 <CheckCircle2 className="w-4 h-4 text-teach shrink-0" aria-hidden="true" />
-                <span className="truncate">{person.id === user?.id ? 'Tú has respondido' : `${person.name} ha respondido`}</span>
+                <span className="truncate">{person.id === user?.id ? 'You have answered' : `${person.name} has answered`}</span>
               </p>
             ))}
             <p>
-              {round.waitingForCount === 1 ? 'Falta 1 persona por responder.' : `Faltan ${round.waitingForCount} personas por responder.`}
+              {round.waitingForCount === 1 ? 'Waiting for 1 person to answer.' : `Waiting for ${round.waitingForCount} people to answer.`}
             </p>
           </div>
         </>
@@ -201,20 +201,20 @@ export const ContrastaPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
           <ul className="space-y-2">
             {round.answers.map(answer => (
               <li key={answer.userId} className="rounded-2xl bg-teach-soft p-3 text-sm space-y-1">
-                <p className="font-bold truncate">{answer.userId === user?.id ? 'Tú' : answer.name}</p>
+                <p className="font-bold truncate">{answer.userId === user?.id ? 'You' : answer.name}</p>
                 <p className="whitespace-pre-wrap break-words">{answer.answer}</p>
               </li>
             ))}
           </ul>
-          <p className="text-sm text-muted">¿En qué coincidís y en qué no? Hablad en el chat. Si os ayuda, pedid un contraste.</p>
+          <p className="text-sm text-muted">Where do you agree, and where don't you? Talk it over in the chat. If it helps, ask for a comparison.</p>
           <button onClick={handleFacilitate} disabled={facilitating} className="btn btn-secondary w-full">
             {facilitating && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-            <span>{facilitating ? 'Preparando el contraste...' : 'Proponer contraste'}</span>
+            <span>{facilitating ? 'Preparing the comparison...' : 'Suggest a comparison'}</span>
           </button>
           {facilitateError && <ErrorState message={facilitateError} onRetry={handleFacilitate} />}
           {currentIntervention && <Intervention intervention={currentIntervention} />}
           {startingNew ? startForm : (
-            <button onClick={() => setStartingNew(true)} className="btn btn-secondary w-full">Nueva ronda</button>
+            <button onClick={() => setStartingNew(true)} className="btn btn-secondary w-full">New round</button>
           )}
         </>
       )}

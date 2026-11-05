@@ -18,7 +18,7 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
   if (isLoading) {
-    return <LoadingState message="Recuperando tu sesión..." />;
+    return <LoadingState message="Restoring your session..." />;
   }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;

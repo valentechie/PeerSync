@@ -58,10 +58,10 @@ export const Rooms: React.FC = () => {
             <span>Hack4Edu 2026 · PeerSync</span>
           </p>
           <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight break-words">
-            ¡Hola, {user?.name || 'Estudiante'}! 👋
+            Hi, {user?.name || 'Student'}! 👋
           </h1>
           <p className="text-lg text-indigo-100 leading-relaxed">
-            No hace falta ser experto para aprender con alguien. Abre una sala, invita a tus compañeros, comparte lo que entiendes y resuelve en grupo lo que no.
+            You don't need to be an expert to learn with someone. Open a room, invite your peers, share what you understand and work out the rest together.
           </p>
         </div>
       </section>
@@ -70,47 +70,47 @@ export const Rooms: React.FC = () => {
 
       <div className="grid lg:grid-cols-3 gap-6 items-start">
         <section className="card p-6 sm:p-8" aria-labelledby="create-room">
-          <h2 id="create-room" className="text-2xl text-ink">Abre una sala</h2>
-          <p className="text-sm text-muted mt-1 mb-5">¿Qué quieres estudiar hoy? Después invita a quien quieras: solo entra quien tenga invitación.</p>
+          <h2 id="create-room" className="text-2xl text-ink">Open a room</h2>
+          <p className="text-sm text-muted mt-1 mb-5">What do you want to study today? Then invite anyone you like: only people with an invitation can join.</p>
           {createError && <div className="mb-4"><ErrorState message={createError} /></div>}
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label htmlFor="room-title" className="label">Tema</label>
+              <label htmlFor="room-title" className="label">Topic</label>
               <input
                 id="room-title"
                 required
                 maxLength={120}
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="Ej.: Integrales para el parcial"
+                placeholder="E.g.: Integrals for the midterm"
                 className="field"
               />
             </div>
             <div>
-              <label htmlFor="room-objective" className="label">Objetivo (opcional)</label>
+              <label htmlFor="room-objective" className="label">Goal (optional)</label>
               <textarea
                 id="room-objective"
                 rows={2}
                 maxLength={300}
                 value={objective}
                 onChange={e => setObjective(e.target.value)}
-                placeholder="Ej.: Entender la integración por partes"
+                placeholder="E.g.: Understand integration by parts"
                 className="field"
               />
             </div>
             <button type="submit" disabled={creating || !title.trim()} className="btn btn-primary w-full">
               <Plus className="w-4 h-4" />
-              <span>{creating ? 'Abriendo...' : 'Abrir sala'}</span>
+              <span>{creating ? 'Opening...' : 'Open room'}</span>
             </button>
           </form>
         </section>
 
         <section className="lg:col-span-2 space-y-4" aria-labelledby="open-rooms">
-          <h2 id="open-rooms" className="text-2xl text-ink">Mis salas</h2>
-          {loading && <LoadingState message="Cargando salas..." />}
+          <h2 id="open-rooms" className="text-2xl text-ink">My rooms</h2>
+          {loading && <LoadingState message="Loading rooms..." />}
           {!loading && loadError && <ErrorState message={loadError} onRetry={retry} />}
           {!loading && !loadError && rooms.length === 0 && (
-            <EmptyState title="Aún no estás en ninguna sala" description="Abre una e invita a tus compañeros, o acepta una invitación." />
+            <EmptyState title="You're not in any rooms yet" description="Open one and invite your peers, or accept an invitation." />
           )}
           {!loading && !loadError && (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -123,10 +123,10 @@ export const Rooms: React.FC = () => {
                   <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
                     <span className="text-sm font-semibold text-muted flex items-center gap-1.5">
                       <Users className="w-4 h-4" aria-hidden="true" />
-                      <span>{room.participantCount} {room.participantCount === 1 ? 'persona' : 'personas'}</span>
+                      <span>{room.participantCount} {room.participantCount === 1 ? 'person' : 'people'}</span>
                     </span>
                     <button onClick={() => navigate(`/rooms/${room.id}`)} className="btn btn-primary py-2!">
-                      <span>Entrar</span>
+                      <span>Join</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>

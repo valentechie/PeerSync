@@ -14,9 +14,9 @@ router = APIRouter(prefix="/friends", tags=["friends"])
 
 DbSession = Annotated[Session, Depends(get_db)]
 
-NOT_YOURSELF = HTTPException(status.HTTP_400_BAD_REQUEST, "No puedes añadirte a ti")
-PERSON_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "No se encontró a esa persona")
-NO_REQUEST = HTTPException(status.HTTP_404_NOT_FOUND, "No tienes una solicitud de esa persona")
+NOT_YOURSELF = HTTPException(status.HTTP_400_BAD_REQUEST, "You can't add yourself")
+PERSON_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "That person wasn't found")
+NO_REQUEST = HTTPException(status.HTTP_404_NOT_FOUND, "You have no request from that person")
 
 
 # `request` no se usa en estas rutas, pero slowapi lo exige en la firma.

@@ -9,20 +9,20 @@ export class PhotoError extends Error {}
  * Al redibujarla se pierden sus datos ocultos, como la ubicación GPS de una foto de móvil.
  */
 export async function preparePhoto(file: File): Promise<File> {
-  if (file.size > MAX_ORIGINAL_BYTES) throw new PhotoError('La imagen es demasiado grande. Prueba con otra de menos de 25 MB.');
+  if (file.size > MAX_ORIGINAL_BYTES) throw new PhotoError('The image is too large. Try one under 25 MB.');
 
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
   } catch {
-    throw new PhotoError('No se pudo leer esa imagen. Prueba con un JPEG, PNG o WebP.');
+    throw new PhotoError("Couldn't read that image. Try a JPEG, PNG or WebP.");
   }
   const side = Math.min(bitmap.width, bitmap.height);
   const canvas = document.createElement('canvas');
   canvas.width = PHOTO_SIZE;
   canvas.height = PHOTO_SIZE;
   const context = canvas.getContext('2d');
-  if (!context) throw new PhotoError('Tu navegador no pudo procesar la imagen.');
+  if (!context) throw new PhotoError("Your browser couldn't process the image.");
   // Sin esto, las zonas transparentes de un PNG quedarían negras en el JPEG.
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, PHOTO_SIZE, PHOTO_SIZE);
@@ -30,6 +30,6 @@ export async function preparePhoto(file: File): Promise<File> {
   bitmap.close();
 
   const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', JPEG_QUALITY));
-  if (!blob) throw new PhotoError('Tu navegador no pudo procesar la imagen.');
-  return new File([blob], 'foto.jpg', { type: 'image/jpeg' });
+  if (!blob) throw new PhotoError("Your browser couldn't process the image.");
+  return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
 }

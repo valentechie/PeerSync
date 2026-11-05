@@ -23,9 +23,9 @@ class PracticeRequest(BaseModel):
     def must_alternate_and_await_a_question(cls, history: list[PracticeTurn]) -> list[PracticeTurn]:
         for index, turn in enumerate(history):
             if turn.role != ("coach" if index % 2 == 0 else "student"):
-                raise ValueError("La conversación debe alternar pregunta y respuesta")
+                raise ValueError("The conversation must alternate question and answer")
         if len(history) % 2 != 0:
-            raise ValueError("La última intervención debe ser del estudiante")
+            raise ValueError("The last turn must be the student's")
         return history
 
 

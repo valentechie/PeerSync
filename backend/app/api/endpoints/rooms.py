@@ -19,14 +19,14 @@ router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 DbSession = Annotated[Session, Depends(get_db)]
 
-ROOM_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "No se encontró esa sala")
-NOT_A_MEMBER = HTTPException(status.HTTP_403_FORBIDDEN, "Únete a la sala para ver y enviar mensajes")
-ROOM_CLOSED = HTTPException(status.HTTP_409_CONFLICT, "Esta sala ya está cerrada")
+ROOM_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "That room wasn't found")
+NOT_A_MEMBER = HTTPException(status.HTTP_403_FORBIDDEN, "Join the room to see and send messages")
+ROOM_CLOSED = HTTPException(status.HTTP_409_CONFLICT, "This room is already closed")
 PENDING_FEEDBACK = HTTPException(
-    status.HTTP_409_CONFLICT, "Antes de entrar en otra sala, completa tu feedback pendiente"
+    status.HTTP_409_CONFLICT, "Before joining another room, complete your pending feedback"
 )
-NOT_INVITED = HTTPException(status.HTTP_403_FORBIDDEN, "Esta sala es privada: necesitas una invitación")
-FILE_TOO_LARGE = HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "El archivo no puede superar los 4 MB")
+NOT_INVITED = HTTPException(status.HTTP_403_FORBIDDEN, "This room is private: you need an invitation")
+FILE_TOO_LARGE = HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "The file can't be larger than 4 MB")
 
 
 @contextmanager
@@ -155,7 +155,7 @@ def upload_attachment(
     user: CurrentUser,
     db: DbSession,
     data: Annotated[bytes, Depends(read_limited_body)],
-    file_name: Annotated[str, Query(alias="fileName", max_length=500)] = "archivo",
+    file_name: Annotated[str, Query(alias="fileName", max_length=500)] = "file",
 ) -> MessageRead:
     try:
         return attachment_service.add_attachment(db, user, room_id, file_name, data)
@@ -166,15 +166,15 @@ def upload_attachment(
     except RoomClosedError as exc:
         raise ROOM_CLOSED from exc
     except attachment_service.EmptyFileError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "El archivo está vacío") from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "The file is empty") from exc
     except attachment_service.UnsupportedFileError as exc:
         raise HTTPException(
             status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            "Formato no admitido. Usa imágenes, audio, vídeo MP4 o WebM, o PDF",
+            "Unsupported format. Use images, audio, MP4 or WebM video, or PDF",
         ) from exc
     except attachment_service.RoomStorageFullError as exc:
         raise HTTPException(
-            status.HTTP_413_CONTENT_TOO_LARGE, "Esta sala ya no tiene espacio para más archivos"
+            status.HTTP_413_CONTENT_TOO_LARGE, "This room has no space left for more files"
         ) from exc
 
 
@@ -190,7 +190,7 @@ def download_attachment(
     except NotARoomMemberError as exc:
         raise NOT_A_MEMBER from exc
     except attachment_service.AttachmentNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No se encontró ese archivo") from exc
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "That file wasn't found") from exc
     return Response(
         content=attachment.data,
         media_type=attachment.content_type,
@@ -209,11 +209,11 @@ def create_review(request: Request, room_id: UUID, data: ReviewCreate, user: Cur
     try:
         return review_service.create_review(db, user, room_id, data)
     except review_service.StillInRoomError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Se evalúa al salir de la sala") from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ratings are given when leaving the room") from exc
     except review_service.NothingToReviewError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No coincidiste con esa persona en esta sala") from exc
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "You weren't in this room with that person") from exc
     except review_service.AlreadyReviewedError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ya has evaluado a esa persona en esta sala") from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, "You have already rated that person in this room") from exc
 
 
 @router.get("/{room_id}/invite-candidates", response_model=list[InviteCandidate])
@@ -230,7 +230,7 @@ def invite_candidates(
     except RoomNotFoundError as exc:
         raise ROOM_NOT_FOUND from exc
     except NotARoomMemberError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Solo invita quien está en la sala") from exc
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only people in the room can invite") from exc
     except RoomClosedError as exc:
         raise ROOM_CLOSED from exc
 
@@ -245,14 +245,14 @@ def invite_to_room(
     except RoomNotFoundError as exc:
         raise ROOM_NOT_FOUND from exc
     except NotARoomMemberError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Solo invita quien está en la sala") from exc
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only people in the room can invite") from exc
     except RoomClosedError as exc:
         raise ROOM_CLOSED from exc
     except invitation_service.CannotInviteYourselfError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No puedes invitarte a ti") from exc
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "You can't invite yourself") from exc
     except invitation_service.PersonNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No se encontró a esa persona") from exc
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "That person wasn't found") from exc
     except invitation_service.AlreadyInRoomError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Esa persona ya está en la sala") from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, "That person is already in the room") from exc
     except invitation_service.InvitationDeclinedError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Esa persona ya rechazó la invitación a esta sala") from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, "That person already declined the invitation to this room") from exc

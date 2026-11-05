@@ -6,7 +6,7 @@ import { CRITERIA, fetchFeedback, type FeedbackSummary } from '../services/revie
 import { ErrorState, LoadingState } from './UIStates';
 import { Avatar } from './Swap';
 
-const formatDate = (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 const MAX_PAGES_WITHOUT_GAPS = 5;
 
@@ -46,7 +46,7 @@ export const FeedbackSection: React.FC = () => {
   }, [token, page]);
 
   if (error && !feedback) return <ErrorState message={error} />;
-  if (!feedback) return <LoadingState message="Cargando tu feedback..." />;
+  if (!feedback) return <LoadingState message="Loading your feedback..." />;
 
   const totalPages = Math.ceil(feedback.count / feedback.pageSize);
   const loadingPage = feedback.page !== page;
@@ -55,14 +55,14 @@ export const FeedbackSection: React.FC = () => {
   return (
     <section className="card p-6 sm:p-8 space-y-5" aria-labelledby="my-feedback">
       <div>
-        <h2 id="my-feedback" className="text-2xl text-ink">Feedback recibido</h2>
-        <p className="text-sm text-muted mt-1">Lo que puntúan de ti las personas con las que has estudiado. Solo lo ves tú.</p>
+        <h2 id="my-feedback" className="text-2xl text-ink">Feedback received</h2>
+        <p className="text-sm text-muted mt-1">How the people you've studied with rate you. Only you can see this.</p>
       </div>
 
       {error && <ErrorState message={error} />}
 
       {feedback.count === 0 ? (
-        <p className="text-sm text-muted">Aún no te han evaluado. Tus compañeros lo harán al salir de una sala.</p>
+        <p className="text-sm text-muted">Nobody has rated you yet. Your peers will do so when they leave a room.</p>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -71,7 +71,7 @@ export const FeedbackSection: React.FC = () => {
                 <Star className="w-5 h-5 fill-sun text-sun" aria-hidden="true" />
                 <span>{feedback.average?.toFixed(1)}</span>
               </p>
-              <p className="text-sm text-muted">{feedback.count} {feedback.count === 1 ? 'evaluación' : 'evaluaciones'}</p>
+              <p className="text-sm text-muted">{feedback.count} {feedback.count === 1 ? 'review' : 'reviews'}</p>
             </div>
             {CRITERIA.map(({ key, label }) => (
               <div key={key} className="rounded-2xl border border-line p-4 min-w-0">
@@ -84,18 +84,18 @@ export const FeedbackSection: React.FC = () => {
           {totalPages > 1 && (
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-4">
               <p className="text-xs text-muted" role="status">
-                {firstShown}–{firstShown + feedback.items.length - 1} de {feedback.count}
+                {firstShown}–{firstShown + feedback.items.length - 1} of {feedback.count}
               </p>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPage(page - 1)}
                   disabled={page === 1}
-                  aria-label="Página anterior"
+                  aria-label="Previous page"
                   className="p-1.5 rounded-lg text-muted hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <div role="tablist" aria-label="Páginas de feedback" className="flex items-center gap-1 rounded-xl bg-paper border border-line p-1">
+                <div role="tablist" aria-label="Feedback pages" className="flex items-center gap-1 rounded-xl bg-paper border border-line p-1">
                   {visiblePages(page, totalPages).map((item, index) =>
                     item === 'gap' ? (
                       <span key={`gap-${index}`} className="px-1 text-xs text-muted" aria-hidden="true">…</span>
@@ -104,7 +104,7 @@ export const FeedbackSection: React.FC = () => {
                         key={item}
                         role="tab"
                         aria-selected={item === page}
-                        aria-label={`Página ${item}`}
+                        aria-label={`Page ${item}`}
                         onClick={() => setPage(item)}
                         className={`min-w-7 h-7 px-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${item === page ? 'nav-active' : 'text-muted hover:text-ink'}`}
                       >
@@ -116,7 +116,7 @@ export const FeedbackSection: React.FC = () => {
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={page === totalPages}
-                  aria-label="Página siguiente"
+                  aria-label="Next page"
                   className="p-1.5 rounded-lg text-muted hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />

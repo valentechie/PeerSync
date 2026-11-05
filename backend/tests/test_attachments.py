@@ -65,8 +65,8 @@ def test_type_is_detected_from_the_content(data, expected):
         ("../../etc/passwd", "passwd"),
         ("C:\\Users\\ana\\foto.png", "foto.png"),
         ("a\r\nSet-Cookie: x=1.png", "aSet-Cookie: x=1.png"),
-        ("   ", "archivo"),
-        ("", "archivo"),
+        ("   ", "file"),
+        ("", "file"),
     ],
 )
 def test_file_name_is_cleaned(name, expected):

@@ -114,7 +114,7 @@ def study_matches(db: Session, user: User) -> list[StudyMatchRead]:
     matches = []
     for person in people:
         relation = study_relation(my_code, code_of[person.id])
-        reason = "Estudiáis lo mismo" if relation == StudyRelation.DIRECT else f"Estudios parecidos: {study.family}"
+        reason = "You study the same thing" if relation == StudyRelation.DIRECT else f"Similar studies: {study.family}"
         matches.append(StudyMatchRead(**person.model_dump(), match_type=relation.value, match_reason=reason))
     matches.sort(
         key=lambda m: (m.match_type != StudyRelation.DIRECT.value, -len(m.shared_interests), m.name, str(m.id))

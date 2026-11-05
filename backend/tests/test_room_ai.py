@@ -98,7 +98,7 @@ def test_studymind_starts_at_the_first_step(client, room_id, ana, deepseek):
 
     assert response.status_code == 200
     assert response.json() == {"source": "ai", "step": 1, "message": HELP["message"], "suggestedAction": HELP["suggested_action"], "uncertaintyNote": HELP["uncertainty_note"]}
-    assert "compañero" in LADDER[1]
+    assert "peer" in LADDER[1]
     assert LADDER[1] in calls[-1]["messages"][1]["content"]
 
 

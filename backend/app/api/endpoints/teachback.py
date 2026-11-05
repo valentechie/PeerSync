@@ -21,7 +21,7 @@ from app.services.teachback_service import (
 router = APIRouter(prefix="/rooms/{room_id}/teachback", tags=["teachback"])
 
 DbSession = Annotated[Session, Depends(get_db)]
-SUBMISSION_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "No se encontró esa explicación")
+SUBMISSION_NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "That explanation wasn't found")
 
 
 # `request` no se usa en estas rutas, pero slowapi lo exige en la firma.
@@ -50,9 +50,9 @@ def create_review(
         except SubmissionNotFoundError as exc:
             raise SUBMISSION_NOT_FOUND from exc
         except OwnExplanationError as exc:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "La revisión debe hacerla un compañero") from exc
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "The review must be done by a peer") from exc
         except AlreadyReviewedError as exc:
-            raise HTTPException(status.HTTP_409_CONFLICT, "Esta explicación ya tiene revisión") from exc
+            raise HTTPException(status.HTTP_409_CONFLICT, "This explanation already has a review") from exc
 
 
 @router.post("/{submission_id}/ai-feedback", response_model=TeachBackFeedbackRead)
@@ -65,10 +65,10 @@ def ai_feedback(request: Request, room_id: UUID, submission_id: UUID, user: Curr
             raise SUBMISSION_NOT_FOUND from exc
         except PeerReviewRequiredError as exc:
             raise HTTPException(
-                status.HTTP_409_CONFLICT, "Las sugerencias de IA llegan después de la revisión de un compañero"
+                status.HTTP_409_CONFLICT, "AI suggestions come after a peer's review"
             ) from exc
         except LLM_FAILURES as exc:
             # La revisión del compañero ya está guardada: solo faltan las sugerencias.
             raise HTTPException(
-                status.HTTP_503_SERVICE_UNAVAILABLE, "La IA no está disponible ahora. La revisión de tu compañero sigue guardada"
+                status.HTTP_503_SERVICE_UNAVAILABLE, "The AI isn't available right now. Your peer's review is still saved"
             ) from exc

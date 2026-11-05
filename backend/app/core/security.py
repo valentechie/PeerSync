@@ -80,7 +80,7 @@ def get_current_user(
     """Identifica al usuario solo por el token: nunca por datos que envíe el cliente."""
     unauthorized = HTTPException(
         status.HTTP_401_UNAUTHORIZED,
-        "Sesión no válida o caducada",
+        "Invalid or expired session",
         headers={"WWW-Authenticate": "Bearer"},
     )
     if credentials is None:

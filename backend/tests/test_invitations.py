@@ -134,7 +134,7 @@ def test_candidates_never_expose_email_or_yourself(client, ana, bea):
 
     bea_result = _candidates(client, ana, room_id, search="bea")
     assert "hack4edu.org" not in bea_result.text
-    assert bea_result.json()[0]["study"] == "Grado Medio · Sistemas Microinformáticos y Redes"
+    assert bea_result.json()[0]["study"] == "Intermediate Vocational · Microcomputer Systems and Networks"
     assert _candidates(client, ana, room_id, search="ana").json() == []
 
 

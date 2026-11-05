@@ -24,7 +24,7 @@ export const Login: React.FC = () => {
       // Modo demo: la contraseña no se comprueba ni se envía.
       await login(username.trim());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.');
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -32,14 +32,14 @@ export const Login: React.FC = () => {
 
   return (
     <AuthShell
-      title="Entra en PeerSync"
-      subtitle="Modo demo: escribe cualquier usuario y contraseña. Si no existe, lo creamos."
+      title="Log in to PeerSync"
+      subtitle="Demo mode: type any username and password. If it doesn't exist, we'll create it."
     >
       {error && <ErrorState message={error} />}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="username" className="label">Usuario o correo</label>
+          <label htmlFor="username" className="label">Username or email</label>
           <div className="relative">
             <User className="w-4 h-4 text-muted absolute left-3.5 top-3.5" />
             <input
@@ -50,14 +50,14 @@ export const Login: React.FC = () => {
               autoComplete="username"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="Inventa uno"
+              placeholder="Make one up"
               className="field pl-10"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="password" className="label">Contraseña</label>
+          <label htmlFor="password" className="label">Password</label>
           <div className="relative">
             <Lock className="w-4 h-4 text-muted absolute left-3.5 top-3.5" />
             <input
@@ -66,14 +66,14 @@ export const Login: React.FC = () => {
               autoComplete="off"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="La que quieras"
+              placeholder="Whatever you like"
               className="field pl-10"
             />
           </div>
         </div>
 
         <button type="submit" disabled={loading} className="btn btn-primary w-full py-3">
-          <span>{loading ? 'Entrando...' : 'Entrar'}</span>
+          <span>{loading ? 'Logging in...' : 'Log in'}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </form>

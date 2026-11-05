@@ -14,7 +14,7 @@ export class ApiError extends Error {
 export const apiAssetUrl = (path: string) => `${API_BASE_URL}${path}`;
 
 export const errorMessage = (err: unknown) =>
-  err instanceof Error ? err.message : 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+  err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
 
 interface ValidationIssue {
   loc: (string | number)[];
@@ -23,9 +23,9 @@ interface ValidationIssue {
 const validationMessage = (issues: ValidationIssue[]): string => {
   const { loc } = issues[0];
   const field = loc[loc.length - 1];
-  if (field === 'name') return 'Revisa el nombre: no puede estar vacío ni superar los 100 caracteres.';
-  if (field === 'bio') return 'La biografía no puede superar los 1000 caracteres.';
-  return 'Revisa los datos introducidos.';
+  if (field === 'name') return "Check the name: it can't be empty or longer than 100 characters.";
+  if (field === 'bio') return "The bio can't be longer than 1000 characters.";
+  return 'Check the details you entered.';
 };
 
 const toApiError = async (response: Response): Promise<ApiError> => {
@@ -33,14 +33,14 @@ const toApiError = async (response: Response): Promise<ApiError> => {
   if (response.status === 422 && Array.isArray(detail) && detail.length > 0) {
     return new ApiError(422, validationMessage(detail as ValidationIssue[]));
   }
-  return new ApiError(response.status, typeof detail === 'string' ? detail : 'Ocurrió un error inesperado. Inténtalo de nuevo.');
+  return new ApiError(response.status, typeof detail === 'string' ? detail : 'An unexpected error occurred. Please try again.');
 };
 
 const send = async (path: string, init: RequestInit): Promise<Response> => {
   try {
     return await fetch(`${API_BASE_URL}${path}`, init);
   } catch {
-    throw new ApiError(0, 'No se pudo conectar con el servidor. Inténtalo de nuevo.');
+    throw new ApiError(0, "Couldn't connect to the server. Please try again.");
   }
 };
 

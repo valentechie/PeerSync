@@ -9,7 +9,7 @@ import { Avatar } from './Swap';
 const MIN_SEARCH_LENGTH = 2;
 const SEARCH_DELAY_MS = 300;
 
-const STATUS_LABEL = { member: 'En la sala', invited: 'Invitación enviada', declined: 'Rechazó la invitación' };
+const STATUS_LABEL = { member: 'In the room', invited: 'Invitation sent', declined: 'Declined the invitation' };
 
 export const InviteDialog: React.FC<{ roomId: string; onClose: () => void }> = ({ roomId, onClose }) => {
   const { token } = useAuth();
@@ -74,8 +74,8 @@ export const InviteDialog: React.FC<{ roomId: string; onClose: () => void }> = (
     >
       <div role="dialog" aria-modal="true" aria-labelledby="invite-title" className="card w-full max-w-lg p-5 sm:p-6 space-y-4 my-auto">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="invite-title" className="text-xl text-ink">Invitar a la sala</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="p-2 -m-2 text-muted hover:text-ink rounded-lg cursor-pointer">
+          <h2 id="invite-title" className="text-xl text-ink">Invite to the room</h2>
+          <button onClick={onClose} aria-label="Close" className="p-2 -m-2 text-muted hover:text-ink rounded-lg cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -87,21 +87,21 @@ export const InviteDialog: React.FC<{ roomId: string; onClose: () => void }> = (
             value={search}
             onChange={e => setSearch(e.target.value)}
             maxLength={100}
-            placeholder="Busca a cualquier persona por su nombre"
-            aria-label="Buscar personas"
+            placeholder="Search for anyone by name"
+            aria-label="Search people"
             className="field pl-10"
           />
         </div>
 
         {error && <ErrorState message={error} />}
 
-        <h3 className="eyebrow font-sans text-teach">{query ? 'Resultados' : 'Tus amigos'}</h3>
+        <h3 className="eyebrow font-sans text-teach">{query ? 'Results' : 'Your friends'}</h3>
 
-        {!searchable && <p className="text-sm text-muted">Escribe al menos {MIN_SEARCH_LENGTH} letras.</p>}
-        {searchable && !candidates && !error && <p role="status" className="text-sm text-muted">Cargando...</p>}
+        {!searchable && <p className="text-sm text-muted">Type at least {MIN_SEARCH_LENGTH} letters.</p>}
+        {searchable && !candidates && !error && <p role="status" className="text-sm text-muted">Loading...</p>}
         {searchable && candidates?.length === 0 && (
           <p className="text-sm text-muted">
-            {query ? 'No hay nadie con ese nombre.' : 'Aún no tienes amigos aquí. Busca a cualquier persona por su nombre.'}
+            {query ? 'Nobody has that name.' : 'You have no friends here yet. Search for anyone by name.'}
           </p>
         )}
 
@@ -114,7 +114,7 @@ export const InviteDialog: React.FC<{ roomId: string; onClose: () => void }> = (
                   <span className="min-w-0">
                     <span className="block font-bold truncate">
                       {person.name}
-                      {person.isFriend && query && <span className="chip chip-teach ml-2 py-0.5!">Amigo</span>}
+                      {person.isFriend && query && <span className="chip chip-teach ml-2 py-0.5!">Friend</span>}
                     </span>
                     {person.study && <span className="block text-xs text-muted truncate">{person.study}</span>}
                   </span>
@@ -128,11 +128,11 @@ export const InviteDialog: React.FC<{ roomId: string; onClose: () => void }> = (
                   <button
                     onClick={() => handleInvite(person)}
                     disabled={busyId === person.id}
-                    aria-label={`Invitar a ${person.name}`}
+                    aria-label={`Invite ${person.name}`}
                     className="btn btn-primary py-2! shrink-0"
                   >
                     <UserPlus className="w-4 h-4" aria-hidden="true" />
-                    <span>Invitar</span>
+                    <span>Invite</span>
                   </button>
                 )}
               </li>

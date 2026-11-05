@@ -25,7 +25,7 @@ SkillNames = Annotated[
 
 def _known_study(code: str | None) -> str | None:
     if code is not None and code not in STUDIES:
-        raise ValueError("Ese estudio no está en el catálogo")
+        raise ValueError("That study isn't in the catalogue")
     return code
 
 

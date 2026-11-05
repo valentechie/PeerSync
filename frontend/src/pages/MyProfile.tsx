@@ -66,7 +66,7 @@ export const MyProfile: React.FC = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron guardar los cambios.');
+      setError(err instanceof Error ? err.message : "Couldn't save the changes.");
     } finally {
       setSaving(false);
     }
@@ -75,11 +75,11 @@ export const MyProfile: React.FC = () => {
   return (
     <div className="page max-w-3xl space-y-8">
       <div>
-        <h1 className="page-title">Mi perfil</h1>
-        <p className="page-subtitle">Cuéntale a la gente de tus salas quién eres y qué estás aprendiendo.</p>
+        <h1 className="page-title">My profile</h1>
+        <p className="page-subtitle">Tell the people in your rooms who you are and what you're learning.</p>
       </div>
 
-      {success && <SuccessState title="Perfil actualizado" message="Los cambios se han guardado exitosamente." />}
+      {success && <SuccessState title="Profile updated" message="Your changes have been saved." />}
       {error && <ErrorState message={error} />}
 
       <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6">
@@ -91,25 +91,25 @@ export const MyProfile: React.FC = () => {
               <Mail className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span className="truncate">{user?.email}</span>
             </p>
-            <input ref={photoInput} type="file" accept="image/*" onChange={handlePhoto} className="hidden" aria-label="Elegir foto de perfil" />
+            <input ref={photoInput} type="file" accept="image/*" onChange={handlePhoto} className="hidden" aria-label="Choose profile photo" />
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => photoInput.current?.click()} disabled={photoBusy} className="btn btn-secondary py-2!">
                 <Camera className="w-4 h-4" aria-hidden="true" />
-                <span>{photoBusy ? 'Guardando...' : user?.photoUrl ? 'Cambiar foto' : 'Poner foto'}</span>
+                <span>{photoBusy ? 'Saving...' : user?.photoUrl ? 'Change photo' : 'Add photo'}</span>
               </button>
               {user?.photoUrl && (
                 <button type="button" onClick={handleRemovePhoto} disabled={photoBusy} className="btn btn-secondary py-2!">
                   <Trash2 className="w-4 h-4" aria-hidden="true" />
-                  <span>Quitar</span>
+                  <span>Remove</span>
                 </button>
               )}
             </div>
-            <p className="text-xs text-muted">Se recorta en cuadrado y se ve en toda la app.</p>
+            <p className="text-xs text-muted">It's cropped to a square and shown across the app.</p>
           </div>
         </div>
 
         <div>
-          <label htmlFor="name" className="label">Nombre</label>
+          <label htmlFor="name" className="label">Name</label>
           <div className="relative">
             <UserIcon className="w-4 h-4 text-muted absolute left-3.5 top-3.5" />
             <input
@@ -124,7 +124,7 @@ export const MyProfile: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="study" className="label">¿Qué estudias?</label>
+          <label htmlFor="study" className="label">What do you study?</label>
           <div className="relative">
             <GraduationCap className="w-4 h-4 text-muted absolute left-3.5 top-3.5 pointer-events-none" aria-hidden="true" />
             <select
@@ -135,7 +135,7 @@ export const MyProfile: React.FC = () => {
               aria-describedby="study-help"
               className="field pl-10 cursor-pointer"
             >
-              <option value="">{families ? 'Elige tus estudios' : 'Cargando estudios...'}</option>
+              <option value="">{families ? 'Choose your studies' : 'Loading studies...'}</option>
               {families?.map(family => (
                 <optgroup key={family.name} label={family.name}>
                   {family.studies.map(study => (
@@ -146,19 +146,19 @@ export const MyProfile: React.FC = () => {
             </select>
           </div>
           <p id="study-help" className="text-xs text-muted mt-1.5">
-            Te relacionamos con quien estudia lo mismo o algo parecido. Si no aparece el tuyo, elige "Otros estudios" de tu área.
+            We connect you with people studying the same or something similar. If yours isn't listed, choose "Other" for your area.
           </p>
         </div>
 
         <div>
-          <label htmlFor="bio" className="label">Sobre ti</label>
+          <label htmlFor="bio" className="label">About you</label>
           <textarea
             id="bio"
             rows={4}
             maxLength={1000}
             value={bio}
             onChange={e => setBio(e.target.value)}
-            placeholder="Ej.: Estoy preparando Cálculo y me viene bien estudiar con gente."
+            placeholder="E.g.: I'm preparing for Calculus and it helps me to study with others."
             className="field"
           />
         </div>
@@ -166,7 +166,7 @@ export const MyProfile: React.FC = () => {
         <div className="flex justify-end">
           <button type="submit" disabled={saving} className="btn btn-primary">
             <Save className="w-4 h-4" />
-            <span>{saving ? 'Guardando...' : 'Guardar cambios'}</span>
+            <span>{saving ? 'Saving...' : 'Save changes'}</span>
           </button>
         </div>
       </form>

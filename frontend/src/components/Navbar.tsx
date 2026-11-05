@@ -27,18 +27,18 @@ export const Navbar: React.FC = () => {
 
   const badge = (path: string) =>
     path === '/rooms' && invitationCount > 0 ? (
-      <span className="ml-0.5 min-w-4 h-4 px-1 rounded-full bg-sun text-night text-[10px] font-extrabold inline-flex items-center justify-center" aria-label={`${invitationCount} invitaciones`}>
+      <span className="ml-0.5 min-w-4 h-4 px-1 rounded-full bg-sun text-night text-[10px] font-extrabold inline-flex items-center justify-center" aria-label={`${invitationCount} invitations`}>
         {invitationCount}
       </span>
     ) : null;
 
   const navItems = [
-    { name: 'Salas', short: 'Salas', path: '/rooms', icon: MessagesSquare },
-    { name: 'Compañeros', short: 'Compis', path: '/classmates', icon: GraduationCap },
-    { name: 'Amigos', short: 'Amigos', path: '/friends', icon: Users },
-    { name: 'Aprender', short: 'Aprender', path: '/learn', icon: BookOpen },
-    { name: 'Practicar', short: 'Practicar', path: '/practice', icon: Mic },
-    { name: 'Mi perfil', short: 'Perfil', path: '/my-profile', icon: User },
+    { name: 'Rooms', short: 'Rooms', path: '/rooms', icon: MessagesSquare },
+    { name: 'Classmates', short: 'Peers', path: '/classmates', icon: GraduationCap },
+    { name: 'Friends', short: 'Friends', path: '/friends', icon: Users },
+    { name: 'Learn', short: 'Learn', path: '/learn', icon: BookOpen },
+    { name: 'Practice', short: 'Practice', path: '/practice', icon: Mic },
+    { name: 'My profile', short: 'Profile', path: '/my-profile', icon: User },
   ];
 
   return (
@@ -55,7 +55,7 @@ export const Navbar: React.FC = () => {
           </button>
 
           {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 bg-paper/70 p-1.5 rounded-2xl border border-line" aria-label="Principal">
+          <nav className="hidden lg:flex items-center gap-1 bg-paper/70 p-1.5 rounded-2xl border border-line" aria-label="Main">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -79,15 +79,15 @@ export const Navbar: React.FC = () => {
           {/* User Profile & Settings */}
           <div className="flex items-center gap-1 min-w-0">
             {user && (
-              <button onClick={() => navigate('/my-profile')} className="flex items-center gap-2 mr-2 min-w-0 cursor-pointer rounded-lg" aria-label="Ir a mi perfil">
+              <button onClick={() => navigate('/my-profile')} className="flex items-center gap-2 mr-2 min-w-0 cursor-pointer rounded-lg" aria-label="Go to my profile">
                 <Avatar name={user.name} photoUrl={user.photoUrl} className="w-8 h-8 text-sm" />
                 <span className="hidden sm:block text-sm font-bold text-ink truncate max-w-36">{user.name}</span>
               </button>
             )}
             <button
               onClick={() => { logout(); navigate('/login'); }}
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
+              title="Log out"
+              aria-label="Log out"
               className="p-2 text-muted hover:text-learn-strong hover:bg-learn-soft rounded-lg transition-colors cursor-pointer"
             >
               <LogOut className="w-5 h-5" />
@@ -97,7 +97,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Navigation bar */}
-      <nav className="lg:hidden grid grid-cols-6 border-t border-line px-0.5 py-1" aria-label="Principal móvil">
+      <nav className="lg:hidden grid grid-cols-6 border-t border-line px-0.5 py-1" aria-label="Main mobile">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (

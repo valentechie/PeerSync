@@ -200,7 +200,7 @@ def test_private_room_cannot_be_opened_without_invitation(client, ana, bea):
     response = _direct_join(client, bea, room_id)
 
     assert response.status_code == 403
-    assert "invitación" in response.json()["detail"]
+    assert "invitation" in response.json()["detail"]
     assert client.get(f"{ROOMS}/{room_id}", headers=bea).status_code == 403
     assert client.get(f"{ROOMS}/{room_id}/messages", headers=bea).status_code == 403
     assert client.get(f"{ROOMS}/{room_id}", headers=ana).json()["participantCount"] == 1

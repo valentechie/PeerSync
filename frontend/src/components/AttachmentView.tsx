@@ -31,13 +31,13 @@ export const AttachmentView: React.FC<{ roomId: string; attachment: RoomAttachme
     };
   }, [token, roomId, attachment.id]);
 
-  if (failed) return <p className="text-sm text-muted">No se pudo cargar {attachment.fileName}.</p>;
-  if (!url) return <p role="status" className="text-sm text-muted">Cargando {attachment.fileName}...</p>;
+  if (failed) return <p className="text-sm text-muted">Couldn't load {attachment.fileName}.</p>;
+  if (!url) return <p role="status" className="text-sm text-muted">Loading {attachment.fileName}...</p>;
 
   const { contentType, fileName } = attachment;
   if (contentType.startsWith('image/')) {
     return (
-      <a href={url} download={fileName} title={`Descargar ${fileName}`} className="inline-block max-w-full">
+      <a href={url} download={fileName} title={`Download ${fileName}`} className="inline-block max-w-full">
         <img src={url} alt={fileName} className="rounded-2xl max-h-72 max-w-full object-contain" />
       </a>
     );

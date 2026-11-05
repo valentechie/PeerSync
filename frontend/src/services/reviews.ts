@@ -8,10 +8,10 @@ export interface ReviewScores {
 }
 
 export const CRITERIA: { key: keyof ReviewScores; label: string; hint: string }[] = [
-  { key: 'punctuality', label: 'Puntualidad', hint: '¿Llegó a tiempo y respetó el horario?' },
-  { key: 'treatment', label: 'Trato', hint: '¿Fue respetuoso y agradable?' },
-  { key: 'participation', label: 'Participación', hint: '¿Se implicó y aportó a la sala?' },
-  { key: 'clarity', label: 'Claridad', hint: '¿Se le entendía al explicar?' },
+  { key: 'punctuality', label: 'Punctuality', hint: 'Were they on time and did they respect the schedule?' },
+  { key: 'treatment', label: 'Respect', hint: 'Were they respectful and pleasant?' },
+  { key: 'participation', label: 'Participation', hint: 'Did they get involved and contribute to the room?' },
+  { key: 'clarity', label: 'Clarity', hint: 'Were they easy to understand when explaining?' },
 ];
 
 export const INITIAL_SCORE = 5;

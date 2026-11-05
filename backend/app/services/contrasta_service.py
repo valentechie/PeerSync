@@ -19,7 +19,7 @@ from app.services import room_service
 MIN_PEOPLE_TO_REVEAL = 2
 MAX_MESSAGES_FOR_AI = 20
 MAX_MESSAGE_CHARS_FOR_AI = 500
-UNKNOWN_AUTHOR = "Otro participante"
+UNKNOWN_AUTHOR = "Another participant"
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +172,7 @@ def _answers_identical(answers: list[str]) -> bool:
 def _context_for_ai(db: Session, room: StudySession, round_: ContrastaRound) -> dict[str, Any]:
     """Solo lo publicado para todos tras revelar, con autores anónimos y sin datos de la cuenta."""
     answers = _revealed_answers(db, room.id, round_)
-    labels = {answer.user_id: f"Estudiante {chr(ord('A') + index)}" for index, answer in enumerate(answers)}
+    labels = {answer.user_id: f"Student {chr(ord('A') + index)}" for index, answer in enumerate(answers)}
     # El chat anterior a la revelación queda fuera: pudo escribirse sin pensar en este uso.
     rows = db.execute(
         select(Message.sender_id, Message.content)

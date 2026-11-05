@@ -62,15 +62,15 @@ export const Friends: React.FC = () => {
   return (
     <div className="page max-w-5xl space-y-6">
       <div>
-        <h1 className="page-title">Amigos</h1>
-        <p className="page-subtitle">La gente con la que te sientes a gusto estudiando.</p>
+        <h1 className="page-title">Friends</h1>
+        <p className="page-subtitle">The people you feel comfortable studying with.</p>
       </div>
 
       {actionError && <ErrorState message={actionError} />}
       {loadError && <ErrorState message={loadError} onRetry={load} />}
 
       <section className="card p-5 sm:p-6 space-y-4" aria-labelledby="find-people">
-        <h2 id="find-people" className="text-xl text-ink">Buscar personas</h2>
+        <h2 id="find-people" className="text-xl text-ink">Find people</h2>
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1 min-w-0">
             <Search className="w-4 h-4 text-muted absolute left-3.5 top-3.5" aria-hidden="true" />
@@ -80,16 +80,16 @@ export const Friends: React.FC = () => {
               minLength={MIN_SEARCH_LENGTH}
               maxLength={100}
               required
-              placeholder="Escribe un nombre"
-              aria-label="Nombre de la persona"
+              placeholder="Type a name"
+              aria-label="Person's name"
               className="field pl-10"
             />
           </div>
           <button type="submit" disabled={searching || search.trim().length < MIN_SEARCH_LENGTH} className="btn btn-primary shrink-0">
-            Buscar
+            Search
           </button>
         </form>
-        {results && results.length === 0 && <p className="text-sm text-muted">No hay nadie con ese nombre.</p>}
+        {results && results.length === 0 && <p className="text-sm text-muted">Nobody has that name.</p>}
         {results && results.length > 0 && (
           <ul className="divide-y divide-line">
             {results.map(person => (
@@ -116,11 +116,11 @@ export const Friends: React.FC = () => {
         )}
       </section>
 
-      {!overview && !loadError && <LoadingState message="Cargando amigos..." />}
+      {!overview && !loadError && <LoadingState message="Loading friends..." />}
 
       {overview && overview.received.length > 0 && (
         <section className="card p-5 sm:p-6 space-y-3" aria-labelledby="received">
-          <h2 id="received" className="text-xl text-ink">Solicitudes recibidas ({overview.received.length})</h2>
+          <h2 id="received" className="text-xl text-ink">Requests received ({overview.received.length})</h2>
           <ul className="divide-y divide-line">
             {overview.received.map(person => (
               <li key={person.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -131,9 +131,9 @@ export const Friends: React.FC = () => {
                 <span className="flex gap-2">
                   <button onClick={() => accept(person.id)} className="btn btn-primary py-2!">
                     <Check className="w-4 h-4" aria-hidden="true" />
-                    <span>Aceptar</span>
+                    <span>Accept</span>
                   </button>
-                  <button onClick={() => remove(person.id)} className="btn btn-secondary py-2!">Rechazar</button>
+                  <button onClick={() => remove(person.id)} className="btn btn-secondary py-2!">Decline</button>
                 </span>
               </li>
             ))}
@@ -143,16 +143,16 @@ export const Friends: React.FC = () => {
 
       {overview && overview.friends.length === 0 && (
         <EmptyState
-          title="Aún no tienes amigos aquí"
-          description="Búscalos por nombre, añádelos desde una sala o encuentra gente que quiere aprender lo mismo que tú."
-          actionLabel="Ver quién aprende lo mismo"
+          title="You have no friends here yet"
+          description="Search for them by name, add them from a room, or find people who want to learn the same things as you."
+          actionLabel="See who's learning the same"
           onAction={() => navigate('/learn')}
         />
       )}
 
       {overview && overview.friends.length > 0 && (
         <section className="space-y-3" aria-labelledby="friends">
-          <h2 id="friends" className="text-2xl text-ink">Tus amigos ({overview.friends.length})</h2>
+          <h2 id="friends" className="text-2xl text-ink">Your friends ({overview.friends.length})</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {overview.friends.map(friend => (
               <article key={friend.id} className="card p-5 space-y-3 min-w-0">
@@ -164,16 +164,16 @@ export const Friends: React.FC = () => {
                   </div>
                   <button
                     onClick={() => remove(friend.id)}
-                    title="Eliminar de amigos"
-                    aria-label={`Eliminar a ${friend.name} de amigos`}
+                    title="Remove from friends"
+                    aria-label={`Remove ${friend.name} from friends`}
                     className="p-2 text-muted hover:text-learn-strong hover:bg-learn-soft rounded-lg transition-colors cursor-pointer shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="border-t border-line pt-3">
-                  <p className="eyebrow font-sans text-teach mb-2">Salas a las que puedes entrar</p>
-                  {friend.rooms.length === 0 && <p className="text-sm text-muted">Ninguna por ahora. Las salas son privadas hasta que te invitan.</p>}
+                  <p className="eyebrow font-sans text-teach mb-2">Rooms you can join</p>
+                  {friend.rooms.length === 0 && <p className="text-sm text-muted">None for now. Rooms are private until you're invited.</p>}
                   <ul className="space-y-1.5">
                     {friend.rooms.map(room => (
                       <li key={room.id}>
@@ -193,12 +193,12 @@ export const Friends: React.FC = () => {
 
       {overview && overview.sent.length > 0 && (
         <section className="card p-5 sm:p-6 space-y-3" aria-labelledby="sent">
-          <h2 id="sent" className="text-xl text-ink">Solicitudes enviadas ({overview.sent.length})</h2>
+          <h2 id="sent" className="text-xl text-ink">Requests sent ({overview.sent.length})</h2>
           <ul className="divide-y divide-line">
             {overview.sent.map(person => (
               <li key={person.id} className="flex items-center justify-between gap-3 py-3 min-w-0">
                 <span className="font-bold truncate">{person.name}</span>
-                <button onClick={() => remove(person.id)} className="btn btn-secondary py-2! shrink-0">Cancelar</button>
+                <button onClick={() => remove(person.id)} className="btn btn-secondary py-2! shrink-0">Cancel</button>
               </li>
             ))}
           </ul>

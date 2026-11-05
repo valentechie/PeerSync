@@ -8,11 +8,11 @@ Para añadir un estudio basta con añadirlo a `_CATALOG`.
 from dataclasses import dataclass
 from enum import Enum
 
-MEDIO = "Grado Medio"
-SUPERIOR = "Grado Superior"
-UNIVERSIDAD = "Universidad"
-BACHILLERATO = "Bachillerato"
-OTRO = "Otros"
+MEDIO = "Intermediate Vocational"
+SUPERIOR = "Higher Vocational"
+UNIVERSIDAD = "University"
+BACHILLERATO = "Upper Secondary"
+OTRO = "Other"
 
 
 class StudyRelation(str, Enum):
@@ -31,148 +31,158 @@ class Study:
 
 
 _CATALOG: dict[str, list[tuple[str, str, str]]] = {
-    "Informática": [
-        ("smr", "Sistemas Microinformáticos y Redes", MEDIO),
-        ("asir", "Administración de Sistemas Informáticos en Red", SUPERIOR),
-        ("dam", "Desarrollo de Aplicaciones Multiplataforma", SUPERIOR),
-        ("daw", "Desarrollo de Aplicaciones Web", SUPERIOR),
-        ("ing-informatica", "Ingeniería Informática", UNIVERSIDAD),
-        ("ing-software", "Ingeniería del Software", UNIVERSIDAD),
-        ("ing-computadores", "Ingeniería de Computadores", UNIVERSIDAD),
-        ("ciberseguridad", "Ingeniería de Ciberseguridad", UNIVERSIDAD),
-        ("ciencia-datos", "Ciencia e Ingeniería de Datos", UNIVERSIDAD),
-        ("ia", "Inteligencia Artificial", UNIVERSIDAD),
+    "Computing": [
+        ("smr", "Microcomputer Systems and Networks", MEDIO),
+        ("asir", "Network Computer Systems Administration", SUPERIOR),
+        ("dam", "Cross-Platform Application Development", SUPERIOR),
+        ("daw", "Web Application Development", SUPERIOR),
+        ("ing-informatica", "Computer Engineering", UNIVERSIDAD),
+        ("ing-software", "Software Engineering", UNIVERSIDAD),
+        ("ing-computadores", "Computer Hardware Engineering", UNIVERSIDAD),
+        ("ciberseguridad", "Cybersecurity Engineering", UNIVERSIDAD),
+        ("ciencia-datos", "Data Science and Engineering", UNIVERSIDAD),
+        ("ia", "Artificial Intelligence", UNIVERSIDAD),
     ],
-    "Electrónica y telecomunicaciones": [
-        ("inst-telecom", "Instalaciones de Telecomunicaciones", MEDIO),
-        ("inst-electricas", "Instalaciones Eléctricas y Automáticas", MEDIO),
-        ("sist-telecom", "Sistemas de Telecomunicaciones e Informáticos", SUPERIOR),
-        ("automatizacion", "Automatización y Robótica Industrial", SUPERIOR),
-        ("mant-electronico", "Mantenimiento Electrónico", SUPERIOR),
-        ("sist-electrotecnicos", "Sistemas Electrotécnicos y Automatizados", SUPERIOR),
-        ("ing-telecom", "Ingeniería de Telecomunicación", UNIVERSIDAD),
-        ("ing-electronica", "Ingeniería Electrónica Industrial y Automática", UNIVERSIDAD),
-        ("ing-electrica", "Ingeniería Eléctrica", UNIVERSIDAD),
+    "Electronics and telecommunications": [
+        ("inst-telecom", "Telecommunications Installations", MEDIO),
+        ("inst-electricas", "Electrical and Automated Installations", MEDIO),
+        ("sist-telecom", "Telecommunications and Computer Systems", SUPERIOR),
+        ("automatizacion", "Industrial Automation and Robotics", SUPERIOR),
+        ("mant-electronico", "Electronic Maintenance", SUPERIOR),
+        ("sist-electrotecnicos", "Electrotechnical and Automated Systems", SUPERIOR),
+        ("ing-telecom", "Telecommunications Engineering", UNIVERSIDAD),
+        ("ing-electronica", "Industrial Electronics and Automation Engineering", UNIVERSIDAD),
+        ("ing-electrica", "Electrical Engineering", UNIVERSIDAD),
     ],
-    "Industria y mecánica": [
-        ("mecanizado", "Mecanizado", MEDIO),
-        ("soldadura", "Soldadura y Calderería", MEDIO),
-        ("electromecanica", "Electromecánica de Vehículos Automóviles", MEDIO),
-        ("automocion", "Automoción", SUPERIOR),
-        ("diseno-mecanico", "Diseño en Fabricación Mecánica", SUPERIOR),
-        ("mecatronica", "Mecatrónica Industrial", SUPERIOR),
-        ("ing-mecanica", "Ingeniería Mecánica", UNIVERSIDAD),
-        ("ing-industrial", "Ingeniería en Tecnologías Industriales", UNIVERSIDAD),
-        ("ing-aeroespacial", "Ingeniería Aeroespacial", UNIVERSIDAD),
+    "Industry and mechanics": [
+        ("mecanizado", "Machining", MEDIO),
+        ("soldadura", "Welding and Boilermaking", MEDIO),
+        ("electromecanica", "Motor Vehicle Electromechanics", MEDIO),
+        ("automocion", "Automotive", SUPERIOR),
+        ("diseno-mecanico", "Mechanical Manufacturing Design", SUPERIOR),
+        ("mecatronica", "Industrial Mechatronics", SUPERIOR),
+        ("ing-mecanica", "Mechanical Engineering", UNIVERSIDAD),
+        ("ing-industrial", "Industrial Technologies Engineering", UNIVERSIDAD),
+        ("ing-aeroespacial", "Aerospace Engineering", UNIVERSIDAD),
     ],
-    "Construcción": [
-        ("proyectos-edificacion", "Proyectos de Edificación", SUPERIOR),
-        ("proyectos-obra-civil", "Proyectos de Obra Civil", SUPERIOR),
-        ("arquitectura", "Arquitectura", UNIVERSIDAD),
-        ("ing-civil", "Ingeniería Civil", UNIVERSIDAD),
+    "Construction": [
+        ("proyectos-edificacion", "Building Projects", SUPERIOR),
+        ("proyectos-obra-civil", "Civil Works Projects", SUPERIOR),
+        ("arquitectura", "Architecture", UNIVERSIDAD),
+        ("ing-civil", "Civil Engineering", UNIVERSIDAD),
     ],
-    "Administración y empresa": [
-        ("gestion-admin", "Gestión Administrativa", MEDIO),
-        ("admin-finanzas", "Administración y Finanzas", SUPERIOR),
-        ("asistencia-direccion", "Asistencia a la Dirección", SUPERIOR),
-        ("ade", "Administración y Dirección de Empresas", UNIVERSIDAD),
-        ("economia", "Economía", UNIVERSIDAD),
-        ("finanzas-contabilidad", "Finanzas y Contabilidad", UNIVERSIDAD),
+    "Administration and business": [
+        ("gestion-admin", "Administrative Management", MEDIO),
+        ("admin-finanzas", "Administration and Finance", SUPERIOR),
+        ("asistencia-direccion", "Executive Assistance", SUPERIOR),
+        ("ade", "Business Administration", UNIVERSIDAD),
+        ("economia", "Economics", UNIVERSIDAD),
+        ("finanzas-contabilidad", "Finance and Accounting", UNIVERSIDAD),
     ],
-    "Comercio y marketing": [
-        ("actividades-comerciales", "Actividades Comerciales", MEDIO),
-        ("marketing-publicidad", "Marketing y Publicidad", SUPERIOR),
-        ("comercio-internacional", "Comercio Internacional", SUPERIOR),
-        ("gestion-ventas", "Gestión de Ventas y Espacios Comerciales", SUPERIOR),
-        ("marketing", "Marketing e Investigación de Mercados", UNIVERSIDAD),
+    "Commerce and marketing": [
+        ("actividades-comerciales", "Commercial Activities", MEDIO),
+        ("marketing-publicidad", "Marketing and Advertising", SUPERIOR),
+        ("comercio-internacional", "International Trade", SUPERIOR),
+        ("gestion-ventas", "Sales and Retail Space Management", SUPERIOR),
+        ("marketing", "Marketing and Market Research", UNIVERSIDAD),
     ],
-    "Sanidad": [
-        ("auxiliar-enfermeria", "Cuidados Auxiliares de Enfermería", MEDIO),
-        ("farmacia-parafarmacia", "Farmacia y Parafarmacia", MEDIO),
-        ("emergencias", "Emergencias Sanitarias", MEDIO),
-        ("laboratorio-clinico", "Laboratorio Clínico y Biomédico", SUPERIOR),
-        ("imagen-diagnostico", "Imagen para el Diagnóstico y Medicina Nuclear", SUPERIOR),
-        ("higiene-bucodental", "Higiene Bucodental", SUPERIOR),
-        ("dietetica", "Dietética", SUPERIOR),
-        ("medicina", "Medicina", UNIVERSIDAD),
-        ("enfermeria", "Enfermería", UNIVERSIDAD),
-        ("farmacia", "Farmacia", UNIVERSIDAD),
-        ("fisioterapia", "Fisioterapia", UNIVERSIDAD),
+    "Healthcare": [
+        ("auxiliar-enfermeria", "Nursing Assistant Care", MEDIO),
+        ("farmacia-parafarmacia", "Pharmacy and Parapharmacy", MEDIO),
+        ("emergencias", "Medical Emergencies", MEDIO),
+        ("laboratorio-clinico", "Clinical and Biomedical Laboratory", SUPERIOR),
+        ("imagen-diagnostico", "Diagnostic Imaging and Nuclear Medicine", SUPERIOR),
+        ("higiene-bucodental", "Dental Hygiene", SUPERIOR),
+        ("dietetica", "Dietetics", SUPERIOR),
+        ("medicina", "Medicine", UNIVERSIDAD),
+        ("enfermeria", "Nursing", UNIVERSIDAD),
+        ("farmacia", "Pharmacy", UNIVERSIDAD),
+        ("fisioterapia", "Physiotherapy", UNIVERSIDAD),
     ],
-    "Educación y servicios sociales": [
-        ("dependencia", "Atención a Personas en Situación de Dependencia", MEDIO),
-        ("educacion-infantil-fp", "Educación Infantil", SUPERIOR),
-        ("integracion-social", "Integración Social", SUPERIOR),
-        ("animacion-sociocultural", "Animación Sociocultural y Turística", SUPERIOR),
-        ("magisterio-infantil", "Maestro en Educación Infantil", UNIVERSIDAD),
-        ("magisterio-primaria", "Maestro en Educación Primaria", UNIVERSIDAD),
-        ("pedagogia", "Pedagogía", UNIVERSIDAD),
-        ("psicologia", "Psicología", UNIVERSIDAD),
-        ("trabajo-social", "Trabajo Social", UNIVERSIDAD),
+    "Education and social services": [
+        ("dependencia", "Care for Dependent People", MEDIO),
+        ("educacion-infantil-fp", "Early Childhood Education", SUPERIOR),
+        ("integracion-social", "Social Integration", SUPERIOR),
+        ("animacion-sociocultural", "Sociocultural and Tourism Activities", SUPERIOR),
+        ("magisterio-infantil", "Early Childhood Teaching", UNIVERSIDAD),
+        ("magisterio-primaria", "Primary Teaching", UNIVERSIDAD),
+        ("pedagogia", "Pedagogy", UNIVERSIDAD),
+        ("psicologia", "Psychology", UNIVERSIDAD),
+        ("trabajo-social", "Social Work", UNIVERSIDAD),
     ],
-    "Imagen, sonido y diseño": [
-        ("video-dj-sonido", "Vídeo Disc-Jockey y Sonido", MEDIO),
-        ("animacion-3d", "Animaciones 3D, Juegos y Entornos Interactivos", SUPERIOR),
-        ("realizacion", "Realización de Proyectos Audiovisuales y Espectáculos", SUPERIOR),
-        ("sonido", "Sonido para Audiovisuales y Espectáculos", SUPERIOR),
-        ("comunicacion-audiovisual", "Comunicación Audiovisual", UNIVERSIDAD),
-        ("periodismo", "Periodismo", UNIVERSIDAD),
-        ("bellas-artes", "Bellas Artes", UNIVERSIDAD),
-        ("diseno", "Diseño", UNIVERSIDAD),
+    "Image, sound and design": [
+        ("video-dj-sonido", "Video, DJ and Sound", MEDIO),
+        ("animacion-3d", "3D Animation, Games and Interactive Environments", SUPERIOR),
+        ("realizacion", "Audiovisual and Live Show Production", SUPERIOR),
+        ("sonido", "Sound for Audiovisuals and Live Shows", SUPERIOR),
+        ("comunicacion-audiovisual", "Audiovisual Communication", UNIVERSIDAD),
+        ("periodismo", "Journalism", UNIVERSIDAD),
+        ("bellas-artes", "Fine Arts", UNIVERSIDAD),
+        ("diseno", "Design", UNIVERSIDAD),
     ],
-    "Hostelería y turismo": [
-        ("cocina", "Cocina y Gastronomía", MEDIO),
-        ("servicios-restauracion", "Servicios en Restauración", MEDIO),
-        ("direccion-cocina", "Dirección de Cocina", SUPERIOR),
-        ("alojamientos", "Gestión de Alojamientos Turísticos", SUPERIOR),
-        ("agencias-viajes", "Agencias de Viajes y Gestión de Eventos", SUPERIOR),
-        ("turismo", "Turismo", UNIVERSIDAD),
-        ("gastronomia", "Ciencias Gastronómicas", UNIVERSIDAD),
+    "Hospitality and tourism": [
+        ("cocina", "Cooking and Gastronomy", MEDIO),
+        ("servicios-restauracion", "Restaurant Services", MEDIO),
+        ("direccion-cocina", "Kitchen Management", SUPERIOR),
+        ("alojamientos", "Tourist Accommodation Management", SUPERIOR),
+        ("agencias-viajes", "Travel Agencies and Event Management", SUPERIOR),
+        ("turismo", "Tourism", UNIVERSIDAD),
+        ("gastronomia", "Gastronomic Sciences", UNIVERSIDAD),
     ],
-    "Actividad física y deporte": [
-        ("guia-medio-natural", "Guía en el Medio Natural y de Tiempo Libre", MEDIO),
-        ("animacion-sociodeportiva", "Enseñanza y Animación Sociodeportiva", SUPERIOR),
-        ("acondicionamiento-fisico", "Acondicionamiento Físico", SUPERIOR),
-        ("cafyd", "Ciencias de la Actividad Física y del Deporte", UNIVERSIDAD),
+    "Physical activity and sport": [
+        ("guia-medio-natural", "Nature and Leisure Guide", MEDIO),
+        ("animacion-sociodeportiva", "Sports Teaching and Community Activities", SUPERIOR),
+        ("acondicionamiento-fisico", "Physical Conditioning", SUPERIOR),
+        ("cafyd", "Physical Activity and Sports Sciences", UNIVERSIDAD),
     ],
-    "Ciencias": [
-        ("quimica-industrial", "Química Industrial", SUPERIOR),
-        ("matematicas", "Matemáticas", UNIVERSIDAD),
-        ("fisica", "Física", UNIVERSIDAD),
-        ("quimica", "Química", UNIVERSIDAD),
-        ("biologia", "Biología", UNIVERSIDAD),
-        ("biotecnologia", "Biotecnología", UNIVERSIDAD),
+    "Sciences": [
+        ("quimica-industrial", "Industrial Chemistry", SUPERIOR),
+        ("matematicas", "Mathematics", UNIVERSIDAD),
+        ("fisica", "Physics", UNIVERSIDAD),
+        ("quimica", "Chemistry", UNIVERSIDAD),
+        ("biologia", "Biology", UNIVERSIDAD),
+        ("biotecnologia", "Biotechnology", UNIVERSIDAD),
     ],
-    "Derecho y humanidades": [
-        ("derecho", "Derecho", UNIVERSIDAD),
-        ("historia", "Historia", UNIVERSIDAD),
-        ("filologia", "Filología", UNIVERSIDAD),
-        ("traduccion", "Traducción e Interpretación", UNIVERSIDAD),
+    "Law and humanities": [
+        ("derecho", "Law", UNIVERSIDAD),
+        ("historia", "History", UNIVERSIDAD),
+        ("filologia", "Philology", UNIVERSIDAD),
+        ("traduccion", "Translation and Interpreting", UNIVERSIDAD),
     ],
-    "Bachillerato": [
-        ("bach-ciencias", "Ciencias y Tecnología", BACHILLERATO),
-        ("bach-sociales", "Humanidades y Ciencias Sociales", BACHILLERATO),
-        ("bach-artes", "Artes", BACHILLERATO),
+    "Upper Secondary": [
+        ("bach-ciencias", "Science and Technology", BACHILLERATO),
+        ("bach-sociales", "Humanities and Social Sciences", BACHILLERATO),
+        ("bach-artes", "Arts", BACHILLERATO),
         ("bach-general", "General", BACHILLERATO),
     ],
 }
 
-GENERIC_PREFIX = "otros-"
-
-
-def _slug(text: str) -> str:
-    table = str.maketrans("áéíóúñ", "aeioun")
-    return "-".join(text.lower().translate(table).replace(",", "").split())
-
+# Códigos ya guardados en perfiles: nunca deben cambiar, aunque se traduzca la familia.
+_GENERIC_CODES: dict[str, str] = {
+    "Computing": "otros-informatica",
+    "Electronics and telecommunications": "otros-electronica-y-telecomunicaciones",
+    "Industry and mechanics": "otros-industria-y-mecanica",
+    "Construction": "otros-construccion",
+    "Administration and business": "otros-administracion-y-empresa",
+    "Commerce and marketing": "otros-comercio-y-marketing",
+    "Healthcare": "otros-sanidad",
+    "Education and social services": "otros-educacion-y-servicios-sociales",
+    "Image, sound and design": "otros-imagen-sonido-y-diseno",
+    "Hospitality and tourism": "otros-hosteleria-y-turismo",
+    "Physical activity and sport": "otros-actividad-fisica-y-deporte",
+    "Sciences": "otros-ciencias",
+    "Law and humanities": "otros-derecho-y-humanidades",
+    "Upper Secondary": "otros-bachillerato",
+}
 
 STUDIES: dict[str, Study] = {}
 for _family, _entries in _CATALOG.items():
     for _code, _name, _level in _entries:
         STUDIES[_code] = Study(_code, _name, _level, _family)
-    _generic = GENERIC_PREFIX + _slug(_family)
-    STUDIES[_generic] = Study(_generic, f"Otros estudios de {_family}", OTRO, _family, is_generic=True)
+    _generic = _GENERIC_CODES[_family]
+    STUDIES[_generic] = Study(_generic, f"Other {_family} studies", OTRO, _family, is_generic=True)
 # Sin familia: no se relaciona con nadie, porque no se sabe qué estudia.
-STUDIES["otros"] = Study("otros", "Otros estudios", OTRO, None, is_generic=True)
+STUDIES["otros"] = Study("otros", "Other studies", OTRO, None, is_generic=True)
 
 FAMILIES: tuple[str, ...] = tuple(_CATALOG)
 

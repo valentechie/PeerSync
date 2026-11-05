@@ -31,7 +31,7 @@ def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResp
 @app.exception_handler(RateLimitExceeded)
 def handle_rate_limit(_: Request, __: RateLimitExceeded) -> JSONResponse:
     return JSONResponse(
-        {"detail": "Demasiadas peticiones, inténtalo de nuevo en un minuto"},
+        {"detail": "Too many requests, please try again in a minute"},
         status.HTTP_429_TOO_MANY_REQUESTS,
     )
 
@@ -39,7 +39,7 @@ def handle_rate_limit(_: Request, __: RateLimitExceeded) -> JSONResponse:
 @app.exception_handler(OperationalError)
 def handle_database_unavailable(_: Request, __: OperationalError) -> JSONResponse:
     return JSONResponse(
-        {"detail": "Servicio no disponible temporalmente"},
+        {"detail": "Service temporarily unavailable"},
         status.HTTP_503_SERVICE_UNAVAILABLE,
     )
 

@@ -62,7 +62,7 @@ def detect_content_type(data: bytes) -> str | None:
 def clean_file_name(name: str) -> str:
     base = re.split(r"[\\/]", name)[-1]
     base = re.sub(r"[\x00-\x1f\x7f]", "", base).strip()
-    return base[-MAX_FILE_NAME_LENGTH:] or "archivo"
+    return base[-MAX_FILE_NAME_LENGTH:] or "file"
 
 
 def add_attachment(db: Session, user: User, room_id: UUID, file_name: str, data: bytes) -> MessageRead:

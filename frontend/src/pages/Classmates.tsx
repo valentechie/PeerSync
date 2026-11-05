@@ -11,8 +11,8 @@ import { FriendButton } from '../components/FriendButton';
 type Filter = 'direct' | 'similar';
 
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'direct', label: 'Mismo estudio' },
-  { value: 'similar', label: 'Estudios parecidos' },
+  { value: 'direct', label: 'Same studies' },
+  { value: 'similar', label: 'Similar studies' },
 ];
 
 export const Classmates: React.FC = () => {
@@ -42,9 +42,9 @@ export const Classmates: React.FC = () => {
   return (
     <div className="page max-w-5xl space-y-6">
       <div>
-        <h1 className="page-title">Compañeros</h1>
+        <h1 className="page-title">Classmates</h1>
         <p className="page-subtitle">
-          Gente que estudia lo mismo que tú o algo parecido, aunque sea en otro nivel: de un Grado Medio a una ingeniería.
+          People studying the same as you or something similar, even at another level: from vocational training to an engineering degree.
         </p>
       </div>
 
@@ -52,9 +52,9 @@ export const Classmates: React.FC = () => {
 
       {!user?.studyCode && (
         <EmptyState
-          title="Dinos qué estudias"
-          description="Elige tus estudios en tu perfil y aquí aparecerá la gente con la que te relacionamos."
-          actionLabel="Elegir mis estudios"
+          title="Tell us what you study"
+          description="Choose your studies in your profile and the people we connect you with will appear here."
+          actionLabel="Choose my studies"
           onAction={() => navigate('/my-profile')}
         />
       )}
@@ -63,10 +63,10 @@ export const Classmates: React.FC = () => {
         <>
           <p className="text-sm text-muted flex items-center gap-2 min-w-0">
             <GraduationCap className="w-4 h-4 text-teach shrink-0" aria-hidden="true" />
-            <span className="break-words min-w-0">Tus estudios: <strong className="text-ink">{user.study}</strong></span>
+            <span className="break-words min-w-0">Your studies: <strong className="text-ink">{user.study}</strong></span>
           </p>
 
-          <div className="flex flex-wrap gap-1 bg-paper/70 p-1.5 rounded-2xl border border-line w-fit max-w-full" role="group" aria-label="Filtrar compañeros">
+          <div className="flex flex-wrap gap-1 bg-paper/70 p-1.5 rounded-2xl border border-line w-fit max-w-full" role="group" aria-label="Filter classmates">
             {FILTERS.map(option => (
               <button
                 key={option.value}
@@ -79,12 +79,12 @@ export const Classmates: React.FC = () => {
             ))}
           </div>
 
-          {!matches && !error && <LoadingState message="Buscando compañeros..." />}
+          {!matches && !error && <LoadingState message="Looking for classmates..." />}
 
           {matches && visible.length === 0 && (
             <EmptyState
-              title="Aún no hay nadie aquí"
-              description={filter === 'direct' ? 'Nadie más ha elegido tus mismos estudios todavía. Prueba con los estudios parecidos.' : 'Cuando alguien elija estudios relacionados con los tuyos, aparecerá aquí.'}
+              title="Nobody here yet"
+              description={filter === 'direct' ? 'Nobody else has chosen the same studies yet. Try similar studies.' : 'When someone chooses studies related to yours, they will appear here.'}
             />
           )}
 

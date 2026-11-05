@@ -85,12 +85,12 @@ export const MandatoryFeedback: React.FC = () => {
         className="card w-full max-w-lg p-5 sm:p-7 space-y-4 my-auto"
       >
         <div>
-          <p className="text-sm text-muted truncate">{current.roomTitle}{roomsLeft > 1 && ` · y ${roomsLeft - 1} sala más`}</p>
-          <h2 id="mandatory-feedback-title" className="text-xl text-ink">Evalúa a todos los participantes</h2>
-          <p className="text-sm text-muted mt-1">Es obligatorio para poder entrar en otra sala.</p>
+          <p className="text-sm text-muted truncate">{current.roomTitle}{roomsLeft > 1 && ` · and ${roomsLeft - 1} more ${roomsLeft === 2 ? 'room' : 'rooms'}`}</p>
+          <h2 id="mandatory-feedback-title" className="text-xl text-ink">Rate all participants</h2>
+          <p className="text-sm text-muted mt-1">This is required before you can join another room.</p>
         </div>
 
-        <ul className="flex flex-wrap gap-2" aria-label={`Persona ${finished.length + 1} de ${everyone.length}`}>
+        <ul className="flex flex-wrap gap-2" aria-label={`Person ${finished.length + 1} of ${everyone.length}`}>
           {everyone.map(person => {
             const isDone = finished.includes(person);
             const isCurrent = person === current;
@@ -104,7 +104,7 @@ export const MandatoryFeedback: React.FC = () => {
               >
                 <Avatar name={person.personName} photoUrl={person.personPhotoUrl} tone="learn" className="w-6 h-6 text-[11px]" />
                 <span className="truncate">{person.personName}</span>
-                {isDone && <Check className="w-3.5 h-3.5 text-teach shrink-0" aria-label="evaluado" />}
+                {isDone && <Check className="w-3.5 h-3.5 text-teach shrink-0" aria-label="rated" />}
               </li>
             );
           })}
@@ -113,7 +113,7 @@ export const MandatoryFeedback: React.FC = () => {
         <div className="flex items-center gap-3 border-t border-line pt-4 min-w-0">
           <Avatar name={current.personName} photoUrl={current.personPhotoUrl} tone="learn" className="w-12 h-12 text-xl" />
           <div className="min-w-0">
-            <p className="text-xs text-muted">Persona {finished.length + 1} de {everyone.length}</p>
+            <p className="text-xs text-muted">Person {finished.length + 1} of {everyone.length}</p>
             <h3 className="text-lg text-ink truncate">{current.personName}</h3>
           </div>
         </div>
@@ -145,7 +145,7 @@ export const MandatoryFeedback: React.FC = () => {
           ))}
           <button type="submit" disabled={sending} className="btn btn-primary w-full">
             <Send className="w-4 h-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{sending ? 'Enviando...' : next ? `Enviar y seguir con ${next.personName}` : 'Enviar y terminar'}</span>
+            <span className="truncate">{sending ? 'Sending...' : next ? `Send and continue with ${next.personName}` : 'Send and finish'}</span>
           </button>
         </form>
 
@@ -157,7 +157,7 @@ export const MandatoryFeedback: React.FC = () => {
           }}
           className="block mx-auto text-xs font-bold text-muted underline underline-offset-2 cursor-pointer"
         >
-          Cerrar sesión
+          Log out
         </button>
       </div>
     </div>

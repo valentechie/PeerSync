@@ -14,7 +14,7 @@ router = APIRouter(prefix="/matching", tags=["matching"])
 
 DbSession = Annotated[Session, Depends(get_db)]
 
-PARTNER_NOT_FOUND = "No se encontró a ese compañero"
+PARTNER_NOT_FOUND = "That peer wasn't found"
 
 
 # `request` no se usa aquí, pero slowapi lo exige en la firma.
@@ -44,10 +44,10 @@ def create_match_request(request: Request, data: MatchRequestCreate, user: Curre
     try:
         return matching_service.create_request(db, user, data.receiver_id)
     except matching_service.CannotMatchWithYourselfError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No puedes enviarte una solicitud a ti mismo") from exc
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "You can't send a request to yourself") from exc
     except matching_service.PartnerNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, PARTNER_NOT_FOUND) from exc
     except matching_service.RequestAlreadyExistsError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe una solicitud con este compañero") from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, "A request with this peer already exists") from exc
     except matching_service.NotComplementaryError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Vuestras habilidades no se complementan todavía") from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, "Your skills don't complement each other yet") from exc

@@ -61,10 +61,10 @@ export const InvitationsPanel: React.FC = () => {
       <div>
         <h2 id="my-invitations" className="text-2xl text-ink flex items-center gap-2">
           <Mail className="w-6 h-6 text-teach-strong shrink-0" aria-hidden="true" />
-          <span>Salas disponibles{invitations.length > 0 && ` (${invitations.length})`}</span>
+          <span>Available rooms{invitations.length > 0 && ` (${invitations.length})`}</span>
         </h2>
         <p className="text-sm text-muted mt-1">
-          {invitations.length > 0 ? 'Salas a las que te han invitado.' : 'Aquí aparecerán las salas a las que te inviten.'}
+          {invitations.length > 0 ? 'Rooms you have been invited to.' : 'Rooms you are invited to will appear here.'}
         </p>
       </div>
       {error && <ErrorState message={error} />}
@@ -72,18 +72,18 @@ export const InvitationsPanel: React.FC = () => {
         {invitations.map(invitation => (
           <article key={invitation.id} className="card p-5 space-y-3 min-w-0">
             <div className="min-w-0 space-y-1">
-              <p className="text-sm text-muted break-words"><strong className="text-ink">{invitation.inviterName}</strong> te invita a:</p>
+              <p className="text-sm text-muted break-words"><strong className="text-ink">{invitation.inviterName}</strong> invited you to:</p>
               <h3 className="text-lg text-ink break-words">{invitation.roomTitle}</h3>
               {invitation.roomObjective && <p className="text-sm text-muted break-words">{invitation.roomObjective}</p>}
             </div>
             <div className="flex gap-2">
               <button onClick={() => handleAccept(invitation)} disabled={busyId === invitation.id} className="btn btn-primary flex-1 py-2!">
                 <Check className="w-4 h-4" aria-hidden="true" />
-                <span>Aceptar</span>
+                <span>Accept</span>
               </button>
               <button onClick={() => handleDecline(invitation)} disabled={busyId === invitation.id} className="btn btn-secondary flex-1 py-2!">
                 <X className="w-4 h-4" aria-hidden="true" />
-                <span>Rechazar</span>
+                <span>Decline</span>
               </button>
             </div>
           </article>

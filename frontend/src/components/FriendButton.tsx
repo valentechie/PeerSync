@@ -18,7 +18,7 @@ export const FriendButton: React.FC<{
     return (
       <span className="chip chip-teach inline-flex items-center gap-1.5 shrink-0">
         <Check className="w-3.5 h-3.5" aria-hidden="true" />
-        <span>Amigos</span>
+        <span>Friends</span>
       </span>
     );
   }
@@ -26,7 +26,7 @@ export const FriendButton: React.FC<{
     return (
       <span className="chip chip-demo inline-flex items-center gap-1.5 shrink-0">
         <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-        <span>Solicitud enviada</span>
+        <span>Request sent</span>
       </span>
     );
   }
@@ -47,7 +47,7 @@ export const FriendButton: React.FC<{
   return (
     <button onClick={handleClick} disabled={busy} className="btn btn-secondary py-2! shrink-0">
       <UserPlus className="w-4 h-4" aria-hidden="true" />
-      <span>{status === 'received' ? 'Aceptar' : 'Añadir'}</span>
+      <span>{status === 'received' ? 'Accept' : 'Add'}</span>
     </button>
   );
 };

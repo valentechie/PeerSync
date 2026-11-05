@@ -70,20 +70,20 @@ const SubmissionCard: React.FC<{
     <li className="rounded-2xl border border-line p-3 space-y-3 text-sm">
       <div className="space-y-1">
         <p className="font-bold break-words">{submission.concept}</p>
-        <p className="text-xs text-muted truncate">Explica {isMine ? 'tú' : submission.explainerName}</p>
+        <p className="text-xs text-muted truncate">Explained by {isMine ? 'you' : submission.explainerName}</p>
         <p className="whitespace-pre-wrap break-words">{submission.explanation}</p>
       </div>
 
       {submission.review ? (
         <div className="rounded-xl bg-teach-soft p-3 space-y-1">
-          <span className="chip chip-teach">Revisión de {submission.review.reviewerId === user?.id ? 'ti' : submission.review.reviewerName}</span>
+          <span className="chip chip-teach">Review by {submission.review.reviewerId === user?.id ? 'you' : submission.review.reviewerName}</span>
           <p className="whitespace-pre-wrap break-words">{submission.review.comment}</p>
         </div>
       ) : isMine ? (
-        <p className="text-muted">Esperando la revisión de un compañero. La IA solo opina después.</p>
+        <p className="text-muted">Waiting for a peer's review. The AI only comments afterwards.</p>
       ) : (
         <form onSubmit={handleReview} className="space-y-2">
-          <label htmlFor={`review-${submission.id}`} className="label">Resume lo que has entendido y tus dudas</label>
+          <label htmlFor={`review-${submission.id}`} className="label">Summarise what you understood and your questions</label>
           <textarea
             id={`review-${submission.id}`}
             value={comment}
@@ -93,7 +93,7 @@ const SubmissionCard: React.FC<{
             className="field"
           />
           <button type="submit" disabled={saving || !comment.trim()} className="btn btn-primary w-full">
-            {saving ? 'Enviando...' : 'Enviar revisión'}
+            {saving ? 'Sending...' : 'Send review'}
           </button>
         </form>
       )}
@@ -103,18 +103,18 @@ const SubmissionCard: React.FC<{
       {submission.review && !feedback && (
         <button onClick={() => void handleFeedback()} disabled={asking} className="btn btn-secondary w-full">
           {asking && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-          <span>{asking ? 'Preparando sugerencias...' : 'Pedir sugerencias de IA'}</span>
+          <span>{asking ? 'Preparing suggestions...' : 'Ask for AI suggestions'}</span>
         </button>
       )}
 
       {feedback && (
         <div className="rounded-xl bg-guide-soft p-3 space-y-2" aria-live="polite">
-          <span className="chip chip-guide">Sugerencia de IA, no es una nota</span>
-          <FeedbackList title="Fortalezas" items={feedback.strengths} />
-          <FeedbackList title="Posibles lagunas" items={feedback.possibleGaps} />
-          <FeedbackList title="Preguntas para el compañero" items={feedback.questionsForPeer} />
-          <FeedbackList title="Qué comprobar" items={feedback.evidenceToCheck} />
-          <p className="break-words"><strong>Actividad:</strong> {feedback.suggestedPeerActivity}</p>
+          <span className="chip chip-guide">AI suggestion, not a grade</span>
+          <FeedbackList title="Strengths" items={feedback.strengths} />
+          <FeedbackList title="Possible gaps" items={feedback.possibleGaps} />
+          <FeedbackList title="Questions for your peer" items={feedback.questionsForPeer} />
+          <FeedbackList title="What to check" items={feedback.evidenceToCheck} />
+          <p className="break-words"><strong>Activity:</strong> {feedback.suggestedPeerActivity}</p>
           <p className="text-xs text-muted break-words">{feedback.uncertaintyNote}</p>
         </div>
       )}
@@ -176,13 +176,13 @@ export const TeachBackPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
           <MessageSquareQuote className="w-5 h-5 text-guide" aria-hidden="true" />
           <span>TeachBack</span>
         </h2>
-        <p className="text-sm text-muted">Explica un concepto. Primero lo revisa un compañero; después podéis pedir sugerencias a la IA.</p>
+        <p className="text-sm text-muted">Explain a concept. A peer reviews it first; then you can ask the AI for suggestions.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-2">
-        <label htmlFor="teachback-concept" className="label">Concepto</label>
+        <label htmlFor="teachback-concept" className="label">Concept</label>
         <input id="teachback-concept" value={concept} onChange={e => setConcept(e.target.value)} maxLength={200} className="field" />
-        <label htmlFor="teachback-explanation" className="label">Tu explicación</label>
+        <label htmlFor="teachback-explanation" className="label">Your explanation</label>
         <textarea
           id="teachback-explanation"
           value={explanation}
@@ -192,7 +192,7 @@ export const TeachBackPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
           className="field"
         />
         <button type="submit" disabled={saving || !concept.trim() || !explanation.trim()} className="btn btn-primary w-full">
-          {saving ? 'Enviando...' : 'Enviar explicación'}
+          {saving ? 'Sending...' : 'Send explanation'}
         </button>
       </form>
 

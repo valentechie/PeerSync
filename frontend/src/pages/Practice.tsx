@@ -113,7 +113,7 @@ export const Practice: React.FC = () => {
     }
     if (!SpeechApi) return;
     const speech = new SpeechApi();
-    speech.lang = 'es-ES';
+    speech.lang = 'en-US';
     speech.continuous = true;
     speech.onresult = event => {
       let text = '';
@@ -123,7 +123,7 @@ export const Practice: React.FC = () => {
       if (text) setDraft(current => `${current} ${text.trim()}`.trim());
     };
     speech.onerror = () => {
-      setError('No se pudo usar el micrófono. Revisa el permiso del navegador o escribe tu respuesta.');
+      setError("Couldn't use the microphone. Check your browser's permission or type your answer.");
       setListening(false);
     };
     speech.onend = () => setListening(false);
@@ -153,8 +153,8 @@ export const Practice: React.FC = () => {
   return (
     <div className="page max-w-4xl space-y-6">
       <div>
-        <h1 className="page-title">Practicar</h1>
-        <p className="page-subtitle">Entrena cómo explicas antes de hacerlo en vivo. La IA te pregunta como un compañero curioso: no te da la respuesta ni te pone nota.</p>
+        <h1 className="page-title">Practice</h1>
+        <p className="page-subtitle">Train how you explain before doing it live. The AI asks you questions like a curious peer: it won't give you the answer or a grade.</p>
       </div>
 
       {error && <ErrorState message={error} onRetry={started && !finished && !waiting && !awaitingAnswer ? retry : undefined} />}
@@ -162,38 +162,38 @@ export const Practice: React.FC = () => {
       {!started && (
         <form onSubmit={handleStart} className="card p-6 sm:p-8 space-y-4">
           <div>
-            <label htmlFor="practice-topic" className="label">¿Qué quieres explicar?</label>
+            <label htmlFor="practice-topic" className="label">What do you want to explain?</label>
             <input
               id="practice-topic"
               required
               maxLength={120}
               value={topic}
               onChange={e => setTopic(e.target.value)}
-              placeholder="Ej.: Cómo funciona una dirección IP"
+              placeholder="E.g.: How an IP address works"
               className="field"
             />
           </div>
-          <p className="text-xs text-muted">Se envían a Gemini, la IA de Google, el tema y lo que respondas. No escribas datos personales. La sesión no se guarda.</p>
+          <p className="text-xs text-muted">The topic and your answers are sent to Gemini, Google's AI. Don't enter personal data. The session isn't saved.</p>
           <button type="submit" disabled={!topic.trim()} className="btn btn-primary w-full">
             <Play className="w-4 h-4" aria-hidden="true" />
-            <span>Empezar a practicar</span>
+            <span>Start practising</span>
           </button>
         </form>
       )}
 
       {started && (
-        <section className="card flex flex-col h-[62vh] min-h-96" aria-label="Sesión de práctica">
+        <section className="card flex flex-col h-[62vh] min-h-96" aria-label="Practice session">
           <div className="flex items-center justify-between gap-3 p-4 border-b border-line">
             <h2 className="text-lg text-ink truncate min-w-0">{topic}</h2>
             {!finished && (
               <span className="flex items-center gap-3 shrink-0">
-                <span className="text-sm font-bold text-muted flex items-center gap-1.5" aria-label="Tiempo de esta respuesta">
+                <span className="text-sm font-bold text-muted flex items-center gap-1.5" aria-label="Time for this answer">
                   <Timer className="w-4 h-4" aria-hidden="true" />
                   <span>{formatSeconds(seconds)}</span>
                 </span>
                 <button onClick={finish} className="btn btn-secondary py-2!">
                   <Square className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Terminar</span>
+                  <span>Finish</span>
                 </button>
               </span>
             )}
@@ -207,18 +207,18 @@ export const Practice: React.FC = () => {
                 </p>
               </div>
             ))}
-            {waiting && <p role="status" className="text-sm text-muted">La IA está pensando la siguiente pregunta...</p>}
+            {waiting && <p role="status" className="text-sm text-muted">The AI is thinking of the next question...</p>}
           </div>
 
           {finished ? (
             <div className="p-4 sm:p-6 border-t border-line space-y-3">
-              <p className="font-bold">Sesión terminada</p>
+              <p className="font-bold">Session finished</p>
               <p className="text-sm text-muted">
-                Has respondido {answerTimes.length} {answerTimes.length === 1 ? 'pregunta' : 'preguntas'} en {formatSeconds(totalSeconds)}. Para comprobar si se entiende, prueba a explicárselo a alguien en una sala.
+                You answered {answerTimes.length} {answerTimes.length === 1 ? 'question' : 'questions'} in {formatSeconds(totalSeconds)}. To check whether it makes sense, try explaining it to someone in a room.
               </p>
               <button onClick={restart} className="btn btn-primary">
                 <RotateCcw className="w-4 h-4" aria-hidden="true" />
-                <span>Practicar otro tema</span>
+                <span>Practise another topic</span>
               </button>
             </div>
           ) : (
@@ -235,8 +235,8 @@ export const Practice: React.FC = () => {
                 }}
                 maxLength={2000}
                 disabled={!awaitingAnswer}
-                placeholder={SpeechApi ? 'Explícalo con tus palabras, o pulsa el micrófono y habla...' : 'Explícalo con tus palabras...'}
-                aria-label="Tu respuesta"
+                placeholder={SpeechApi ? 'Explain it in your own words, or press the microphone and speak...' : 'Explain it in your own words...'}
+                aria-label="Your answer"
                 className="field flex-1 min-w-0 resize-none"
               />
               {SpeechApi && (
@@ -245,14 +245,14 @@ export const Practice: React.FC = () => {
                   onClick={toggleListening}
                   disabled={!awaitingAnswer}
                   aria-pressed={listening}
-                  aria-label={listening ? 'Dejar de dictar' : 'Dictar con el micrófono'}
-                  title={listening ? 'Dejar de dictar' : 'Dictar con el micrófono'}
+                  aria-label={listening ? 'Stop dictating' : 'Dictate with the microphone'}
+                  title={listening ? 'Stop dictating' : 'Dictate with the microphone'}
                   className="btn btn-secondary px-4!"
                 >
                   {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 </button>
               )}
-              <button type="submit" disabled={!awaitingAnswer || !draft.trim()} aria-label="Enviar respuesta" className="btn btn-primary px-4!">
+              <button type="submit" disabled={!awaitingAnswer || !draft.trim()} aria-label="Send answer" className="btn btn-primary px-4!">
                 <Send className="w-4 h-4" />
               </button>
             </form>

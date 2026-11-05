@@ -7,7 +7,7 @@ export const findYouTubeId = (text: string): string | null => text.match(YOUTUBE
 export const YouTubeEmbed: React.FC<{ videoId: string }> = ({ videoId }) => (
   <iframe
     src={`https://www.youtube-nocookie.com/embed/${videoId}`}
-    title="Vídeo de YouTube"
+    title="YouTube video"
     loading="lazy"
     sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
     allow="encrypted-media; picture-in-picture; fullscreen"

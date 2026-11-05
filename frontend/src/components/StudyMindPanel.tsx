@@ -32,10 +32,10 @@ export const StudyMindPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
         <Lightbulb className="w-5 h-5 text-guide" aria-hidden="true" />
         <span>StudyMind</span>
       </h2>
-      <p className="text-sm text-muted">Tus compañeros van primero. Solo actúa si lo pides, con ayuda gradual y sin dar la solución.</p>
+      <p className="text-sm text-muted">Your peers come first. It only steps in if you ask, with gradual help and without giving the solution.</p>
 
       <div className="space-y-2">
-        <label htmlFor="studymind-difficulty" className="label">¿Dónde te has atascado?</label>
+        <label htmlFor="studymind-difficulty" className="label">Where are you stuck?</label>
         <textarea
           id="studymind-difficulty"
           value={difficulty}
@@ -52,11 +52,11 @@ export const StudyMindPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
       {help && (
         <div className="rounded-2xl bg-guide-soft p-4 space-y-2 text-sm" aria-live="polite">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="chip chip-guide">{help.source === 'ai' ? 'Sugerencia de IA' : 'Ayuda preparada, sin IA'}</span>
-            <span className="text-xs font-bold">Paso {help.step} de {MAX_HELP_STEP}</span>
+            <span className="chip chip-guide">{help.source === 'ai' ? 'AI suggestion' : 'Prepared help, no AI'}</span>
+            <span className="text-xs font-bold">Step {help.step} of {MAX_HELP_STEP}</span>
           </div>
           <p className="font-bold break-words">{help.message}</p>
-          <p className="break-words"><strong>Qué puedes hacer:</strong> {help.suggestedAction}</p>
+          <p className="break-words"><strong>What you can do:</strong> {help.suggestedAction}</p>
           <p className="text-xs text-muted break-words">{help.uncertaintyNote}</p>
         </div>
       )}
@@ -66,10 +66,10 @@ export const StudyMindPanel: React.FC<{ roomId: string }> = ({ roomId }) => {
       {nextStep <= MAX_HELP_STEP ? (
         <button onClick={() => void ask(nextStep)} disabled={loading || !difficulty.trim()} className="btn btn-secondary w-full">
           {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-          <span>{loading ? 'Pensando...' : help ? 'Necesito otra pista' : 'Estoy bloqueado'}</span>
+          <span>{loading ? 'Thinking...' : help ? 'I need another hint' : "I'm stuck"}</span>
         </button>
       ) : (
-        <button onClick={() => setHelp(null)} className="btn btn-secondary w-full">Empezar de nuevo</button>
+        <button onClick={() => setHelp(null)} className="btn btn-secondary w-full">Start over</button>
       )}
     </section>
   );

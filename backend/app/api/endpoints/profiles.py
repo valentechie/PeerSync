@@ -21,7 +21,7 @@ async def read_photo_body(request: Request) -> bytes:
     async for chunk in request.stream():
         body.extend(chunk)
         if len(body) > photo_service.MAX_PHOTO_BYTES:
-            raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "La foto no puede superar 1 MB")
+            raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "The photo can't be larger than 1 MB")
     return bytes(body)
 
 
@@ -46,9 +46,9 @@ def upload_my_photo(
     try:
         photo_service.set_photo(db, user, data)
     except photo_service.EmptyPhotoError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "El archivo está vacío") from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "The file is empty") from exc
     except photo_service.UnsupportedPhotoError as exc:
-        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Usa una imagen JPEG, PNG o WebP") from exc
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Use a JPEG, PNG or WebP image") from exc
     return profile_service.get_profile(db, user)
 
 
@@ -66,7 +66,7 @@ def view_photo(request: Request, user_id: UUID, db: DbSession) -> Response:
     try:
         data, photo_type = photo_service.get_photo(db, user_id)
     except photo_service.PhotoNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Esta persona no tiene foto") from exc
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "This person has no photo") from exc
     return Response(
         content=data,
         media_type=photo_type,

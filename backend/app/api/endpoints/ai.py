@@ -26,7 +26,7 @@ def facilitate(request: Request, room_id: UUID, user: CurrentUser, db: DbSession
             return contrasta_service.facilitate(db, user, room_id)
         except contrasta_service.NoRevealedRoundError as exc:
             raise HTTPException(
-                status.HTTP_409_CONFLICT, "El contraste llega cuando todos hayan enviado su respuesta"
+                status.HTTP_409_CONFLICT, "The comparison is available once everyone has sent their answer"
             ) from exc
 
 

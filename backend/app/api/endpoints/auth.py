@@ -18,5 +18,5 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def login(request: Request, data: DemoLogin, db: Annotated[Session, Depends(get_db)]) -> TokenResponse:
     user = auth_service.get_or_create_demo_user(db, data.email)
     if not user.is_active:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esta cuenta está desactivada")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This account is disabled")
     return TokenResponse(access_token=create_access_token(user.id))

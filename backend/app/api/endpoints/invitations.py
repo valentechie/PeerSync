@@ -15,7 +15,7 @@ router = APIRouter(prefix="/invitations", tags=["invitations"])
 
 DbSession = Annotated[Session, Depends(get_db)]
 
-NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "No se encontró esa invitación")
+NOT_FOUND = HTTPException(status.HTTP_404_NOT_FOUND, "That invitation wasn't found")
 
 
 # `request` no se usa en estas rutas, pero slowapi lo exige en la firma.
@@ -33,10 +33,10 @@ def accept_invitation(request: Request, invitation_id: UUID, user: CurrentUser, 
     except InvitationNotFoundError as exc:
         raise NOT_FOUND from exc
     except RoomClosedError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Esa sala ya está cerrada") from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, "That room is already closed") from exc
     except PendingFeedbackError as exc:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, "Antes de entrar en otra sala, completa tu feedback pendiente"
+            status.HTTP_409_CONFLICT, "Before joining another room, complete your pending feedback"
         ) from exc
 
 

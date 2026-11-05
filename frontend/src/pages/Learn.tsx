@@ -55,16 +55,16 @@ export const Learn: React.FC = () => {
   return (
     <div className="page max-w-5xl space-y-6">
       <div>
-        <h1 className="page-title">Aprender</h1>
-        <p className="page-subtitle">Di qué quieres aprender y encuentra a quienes están en lo mismo. Nadie tiene que ser experto.</p>
+        <h1 className="page-title">Learn</h1>
+        <p className="page-subtitle">Say what you want to learn and find others doing the same. Nobody has to be an expert.</p>
       </div>
 
       {error && <ErrorState message={error} />}
 
       <section className="card p-5 sm:p-6 space-y-4" aria-labelledby="my-interests">
-        <h2 id="my-interests" className="text-xl text-ink">Quiero aprender</h2>
+        <h2 id="my-interests" className="text-xl text-ink">I want to learn</h2>
         <div className="flex flex-wrap gap-1.5">
-          {interests.length === 0 && <span className="text-sm text-muted">Aún no has añadido ningún tema.</span>}
+          {interests.length === 0 && <span className="text-sm text-muted">You haven't added any topics yet.</span>}
           {interests.map(topic => (
             <span key={topic} className="chip chip-teach inline-flex items-center gap-1.5 max-w-full">
               <span className="truncate">{topic}</span>
@@ -72,7 +72,7 @@ export const Learn: React.FC = () => {
                 type="button"
                 disabled={saving}
                 onClick={() => save(interests.filter(item => item !== topic))}
-                aria-label={`Quitar ${topic}`}
+                aria-label={`Remove ${topic}`}
                 className="cursor-pointer shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
@@ -86,24 +86,24 @@ export const Learn: React.FC = () => {
             onChange={e => setDraft(e.target.value)}
             maxLength={100}
             disabled={interests.length >= MAX_INTERESTS}
-            placeholder={interests.length >= MAX_INTERESTS ? `Máximo ${MAX_INTERESTS} temas` : 'Ej.: Cálculo, Python, Inglés...'}
-            aria-label="Tema que quieres aprender"
+            placeholder={interests.length >= MAX_INTERESTS ? `Maximum ${MAX_INTERESTS} topics` : 'E.g.: Calculus, Python, English...'}
+            aria-label="Topic you want to learn"
             className="field flex-1 min-w-0"
           />
           <button type="submit" disabled={saving || !draft.trim() || interests.length >= MAX_INTERESTS} className="btn btn-primary shrink-0">
             <Plus className="w-4 h-4" aria-hidden="true" />
-            <span>Añadir</span>
+            <span>Add</span>
           </button>
         </form>
       </section>
 
       <section className="space-y-3" aria-labelledby="same-interests">
-        <h2 id="same-interests" className="text-2xl text-ink">Quieren aprender lo mismo que tú</h2>
-        {!people && !error && <LoadingState message="Buscando personas..." />}
+        <h2 id="same-interests" className="text-2xl text-ink">They want to learn the same as you</h2>
+        {!people && !error && <LoadingState message="Looking for people..." />}
         {people && people.length === 0 && (
           <EmptyState
-            title={interests.length === 0 ? 'Añade un tema para empezar' : 'Aún no hay nadie con tus temas'}
-            description={interests.length === 0 ? 'Aquí aparecerá la gente que quiere aprender lo mismo que tú.' : 'Prueba con otras palabras: solo coinciden los temas escritos igual.'}
+            title={interests.length === 0 ? 'Add a topic to get started' : 'Nobody shares your topics yet'}
+            description={interests.length === 0 ? 'People who want to learn the same as you will appear here.' : 'Try other words: only topics written the same way match.'}
           />
         )}
         {people && people.length > 0 && (

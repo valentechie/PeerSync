@@ -19,4 +19,4 @@ def list_studies(request: Request, user: CurrentUser) -> list[StudyFamily]:
         for family in FAMILIES
     ]
     others = [StudyOption(code=s.code, label=study_label(s.code)) for s in STUDIES.values() if s.family is None]
-    return [*families, StudyFamily(name="Otros", studies=others)]
+    return [*families, StudyFamily(name="Other", studies=others)]
