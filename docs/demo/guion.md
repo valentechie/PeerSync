@@ -21,7 +21,9 @@ Locución para el vídeo de la demo (1:23). Cada frase empieza en el segundo ind
 | 1:14.3 | Y en tu red ves a tus amigos y lo que tenéis en común. | And in your network, you see your friends and what you have in common. |
 | 1:20.3 | PeerSync. Aprende con tus compañeros. | PeerSync. Learn with your peers. |
 
-Voz generada con Kokoro (modelo de texto a voz libre). Archivos:
+Voz neuronal de Microsoft (Elvira en español, Ava en inglés). Música original compuesta para la demo. Archivos:
 
-- `PeerSync-locucion-es.mp3` / `PeerSync-locucion-en.mp3`: solo la voz, del segundo 0 al final del vídeo.
-- `PeerSync-demo-es-con-voz.mp4` / `PeerSync-demo-en-con-voz.mp4`: el vídeo con la voz ya incluida.
+- `PeerSync-audio-es.mp3` / `PeerSync-audio-en.mp3`: voz y música de fondo, del segundo 0 al final del vídeo.
+- `PeerSync-locucion-es.mp3` / `PeerSync-locucion-en.mp3`: solo la voz.
+- `PeerSync-musica.mp3`: solo la música.
+- `PeerSync-demo-es-con-voz.mp4` / `PeerSync-demo-en-con-voz.mp4`: el vídeo con la voz y la música ya incluidas.
